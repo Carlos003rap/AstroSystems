@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Usuario - ASTRO SISTEMAS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/administracion.css">
+    <link rel="stylesheet" href="css/editar-usuario.css">
+</head>
+<body>
+<div class="admin-container">
+
+    <div id="sidebarRoot"></div>
+
+    <main class="admin-main" id="adminMain">
+
+        <div class="editor-header">
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                <i class="ti ti-menu-2"></i>
+            </button>
+            <button class="back-btn" onclick="navigateTo('administracion-usuarios.html')" title="Volver">
+                <i class="ti ti-arrow-left"></i>
+            </button>
+            <div>
+                <h1>Editar Usuario <span id="headerUserId" class="header-id"></span></h1>
+                <p>Modifica los datos del usuario en el sistema de acceso</p>
+            </div>
+        </div>
+
+        <!-- Info rapida -->
+        <div class="eu-info-grid">
+            <div class="eu-info-card">
+                <span>ID Usuario</span>
+                <strong id="infoId">—</strong>
+            </div>
+            <div class="eu-info-card">
+                <span>Grupo asignado</span>
+                <strong id="infoGrupo">—</strong>
+            </div>
+            <div class="eu-info-card">
+                <span>Estatus actual</span>
+                <span id="infoEstatus" class="status-badge">—</span>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="eu-form-card">
+            <p class="eu-card-title">
+                <i class="ti ti-user-edit"></i>Datos del Usuario
+            </p>
+            <div class="eu-form-row">
+                <div class="eu-fg">
+                    <label>ID Usuario</label>
+                    <input type="text" id="viewUserId" readonly title="ID Usuario" aria-label="ID Usuario">
+                </div>
+                <div class="eu-fg">
+                    <label for="userCedula">Cédula</label>
+                    <input type="text" id="userCedula" placeholder="Ej: 8-123-456" required>
+                </div>
+            </div>
+            <div class="eu-form-row">
+                <div class="eu-fg">
+                    <label for="userGrupo">Grupo</label>
+                    <select id="userGrupo" required aria-label="Grupo" title="Grupo">
+                        <option value="">-- Seleccionar grupo --</option>
+                    </select>
+                </div>
+                <div class="eu-fg">
+                    <label for="userEstatus">Estatus</label>
+                    <select id="userEstatus" aria-label="Estatus" title="Estatus">
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="eu-form-footer">
+                <button type="button" class="btn-cancel" onclick="navigateTo('administracion-usuarios.html')">
+                    Cancelar
+                </button>
+                <button type="button" class="btn-save" onclick="saveUser()">
+                    <i class="ti ti-device-floppy"></i>Guardar cambios
+                </button>
+            </div>
+        </div>
+
+        <!-- Accesos heredados del grupo -->
+        <div class="eu-access-card">
+            <p class="eu-card-title">
+                <i class="ti ti-door"></i>Accesos del Grupo (heredados via acceso_grupo)
+            </p>
+            <div class="eu-access-grid" id="accessGrid">
+                <div class="eu-empty-access">
+                    <i class="ti ti-lock"></i>
+                    Selecciona un grupo para ver sus accesos
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/navbar.js"></script>
+<script>
+window.addEventListener('load', function() {
+    var params = new URLSearchParams(window.location.search);
+    var id = params.get('id');
+
+    // 1. Cargar grupos en el select
+    apiClient.getGroups(0, 100).then(function(res) {
+        var groups = res.content || res;
+        var sel = document.getElementById('userGrupo');
+        sel.innerHTML = '<option value="">-- Seleccionar grupo --</option>';
+        groups.forEach(function(g) {
+            sel.appendChild(new Option(g.codigo + ' - ' + g.nombre, g.idGrupo));
+        });
+
+        // 2. Cargar datos del usuario DESPUES de tener los grupos
+        if (id) {
+            apiClient.getUserById(id).then(function(u) {
+                // Header
+                document.getElementById('headerUserId').textContent = '#' + String(u.idUsuario).padStart(3,'0');
+                // Cards de info
+                document.getElementById('infoId').textContent      = '#' + String(u.idUsuario).padStart(3,'0');
+                document.getElementById('infoGrupo').textContent   = u.grupo ? u.grupo.codigo : '—';
+                var infoEst = document.getElementById('infoEstatus');
+                infoEst.textContent  = u.estatus || '—';
+                infoEst.className    = 'status-badge ' + (u.estatus === 'Activo' ? 'status-active' : 'status-inactive');
+                // Campos del formulario
+                document.getElementById('viewUserId').value  = u.idUsuario || '';
+                document.getElementById('userCedula').value  = u.cedula    || '';
+                document.getElementById('userEstatus').value = u.estatus   || 'Activo';
+                // Seleccionar grupo y cargar accesos
+                if (u.grupo) {
+                    document.getElementById('userGrupo').value = u.grupo.idGrupo;
+                    cargarAccesos(u.grupo.idGrupo);
+                }
+            }).catch(function(e) {
+                console.error(e);
+                UIService.showError('Error al cargar usuario');
+            });
+        }
+    }).catch(function(e) {
+        console.error(e);
+        UIService.showError('Error al cargar grupos');
+    });
+
+    // Cuando cambia el grupo, actualizar accesos
+    document.getElementById('userGrupo').addEventListener('change', function() {
+        if (this.value) cargarAccesos(this.value);
+    });
+});
+
+function cargarAccesos(idGrupo) {
+    var grid = document.getElementById('accessGrid');
+    grid.innerHTML = '<div class="eu-empty-access"><i class="ti ti-loader-2"></i> Cargando...</div>';
+    apiClient.getAccesosByGrupo(idGrupo).then(function(res) {
+        var accesos = res.content || res;
+        if (!accesos || accesos.length === 0) {
+            grid.innerHTML = '<div class="eu-empty-access"><i class="ti ti-lock"></i>Sin accesos registrados</div>';
+            return;
+        }
+        grid.innerHTML = accesos.map(function(a) {
+            var nombre = a.puerta ? a.puerta.nombrePuerta : '—';
+            var area   = a.puerta && a.puerta.area ? a.puerta.area.nombreArea : '';
+            return '<div class="eu-access-item active">' +
+                '<i class="ti ti-door"></i>' +
+                '<div><span>' + nombre + '</span>' + (area ? '<small>' + area + '</small>' : '') + '</div>' +
+                '<i class="ti ti-lock-open" style="margin-left:auto;color:#2f6b55"></i>' +
+            '</div>';
+        }).join('');
+    }).catch(function() {
+        grid.innerHTML = '<div class="eu-empty-access">Error al cargar accesos</div>';
+    });
+}
+
+function saveUser() {
+    var params  = new URLSearchParams(window.location.search);
+    var id      = params.get('id');
+    var cedula  = document.getElementById('userCedula').value.trim();
+    var idGrupo = document.getElementById('userGrupo').value;
+    var estatus = document.getElementById('userEstatus').value;
+
+    if (!cedula || !idGrupo) {
+        UIService.showError('Por favor completa todos los campos');
+        return;
+    }
+
+    var data    = { cedula: cedula, grupo: { idGrupo: parseInt(idGrupo) }, estatus: estatus };
+    var promise = id ? apiClient.updateUser(id, data) : apiClient.createUser(data);
+
+    promise.then(function() {
+        UIService.showSuccess('Usuario guardado correctamente');
+        setTimeout(function() { window.location.href = 'administracion-usuarios.html'; }, 1200);
+    }).catch(function(e) {
+        console.error(e);
+        UIService.showError('Error al guardar. Revisa la consola.');
+    });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultas - ASTRO SISTEMAS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/administracion.css">
+    <link rel="stylesheet" href="css/consultas.css">
+</head>
+<body>
+<div class="admin-container">
+
+    <div id="sidebarRoot"></div>
+
+    <main class="admin-main" id="adminMain">
+
+        <div class="admin-header">
+            <div class="admin-header-left">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <div>
+                    <h1>Consultas</h1>
+                    <p>Explora usuarios, grupos, puertas y areas — selecciona un registro para ver su detalle</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs de navegacion -->
+        <div class="tabs-nav">
+            <button class="cons-tab active" onclick="setTab('usuarios',this)">
+                <i class="ti ti-users"></i>Usuarios
+            </button>
+            <button class="cons-tab" onclick="setTab('grupos',this)">
+                <i class="ti ti-users-group"></i>Grupos
+            </button>
+            <button class="cons-tab" data-roles="ADMIN,CONSULTOR" onclick="setTab('puertas',this)">
+                <i class="ti ti-door"></i>Puertas
+            </button>
+            <button class="cons-tab" data-roles="ADMIN,CONSULTOR" onclick="setTab('areas',this)">
+                <i class="ti ti-building"></i>Areas
+            </button>
+        </div>
+
+        <!-- Layout lista + detalle -->
+        <div class="cons-layout">
+
+            <!-- Panel lista izquierda -->
+            <div class="cons-list-card">
+                <div class="cons-list-hd">
+                    <h3 id="listTitle">Usuarios registrados</h3>
+                    <span class="cons-list-count" id="listCount">0</span>
+                </div>
+                <div class="cons-search">
+                    <div class="cons-search-inner">
+                        <i class="ti ti-search"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar por cédula..." oninput="filterList()" autocomplete="off">
+                    </div>
+                    <select id="filterEstatus" onchange="filterList()" aria-label="Filtrar por estatus" title="Filtrar por estatus">
+                        <option value="">Todos</option>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                </div>
+                <div class="cons-list-items" id="listItems">
+                    <div class="cons-empty">
+                        <i class="ti ti-loader-2"></i>Cargando...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel detalle derecha -->
+            <div class="cons-detail-card" id="detailCard">
+                <div class="cons-placeholder" id="detailEmpty">
+                    <i class="ti ti-hand-click"></i>
+                    <h3>Selecciona un registro</h3>
+                    <p>Haz clic en cualquier elemento de la lista para ver su información completa</p>
+                </div>
+                <div id="detailContent" style="display:none"></div>
+            </div>
+
+        </div>
+
+    </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/navbar.js"></script>
+<script src="js/consultas.js"></script>
+<script>
+var currentTab = 'usuarios';
+var selectedId = null;
+
+var DB = { usuarios: [], grupos: [], puertas: [], areas: [], accesos: [] };
+
+function gP(id){ return DB.puertas.find(function(p){return p.id===id;})||{}; }
+function gG(id){ return DB.grupos.find(function(g){return g.id===id;})||{}; }
+function gA(id){ return DB.areas.find(function(a){return a.id===id;})||{}; }
+
+var CFG = {
+    usuarios: {title:'Usuarios registrados',    placeholder:'Buscar por cédula...'},
+    grupos:   {title:'Grupos registrados',       placeholder:'Buscar por código o nombre...'},
+    puertas:  {title:'Puertas disponibles',      placeholder:'Buscar por puerta o área...'},
+    areas:    {title:'Áreas del sistema',         placeholder:'Buscar por área...'}
+};
+
+// ── MODIFICADO: no permite cambiar a una pestaña que el rol no puede ver ──
+function setTab(tab, btn) {
+    var rol = authService.getUserRole();
+    var soloAdminConsultor = ['puertas', 'areas'].indexOf(tab) !== -1;
+    if (soloAdminConsultor && ['ADMIN', 'CONSULTOR'].indexOf(rol) === -1) {
+        return; // ignora el clic, ese rol no tiene acceso a esta pestaña
+    }
+    currentTab = tab; selectedId = null;
+    document.querySelectorAll('.cons-tab').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterEstatus').value = '';
+    document.getElementById('filterEstatus').style.display = (tab==='usuarios'||tab==='grupos') ? '' : 'none';
+    document.getElementById('listTitle').textContent = CFG[tab].title;
+    document.getElementById('searchInput').placeholder = CFG[tab].placeholder;
+    clearDetail();
+    renderList();
+}
+
+// ── NUEVO: oculta las pestañas que el rol actual no puede usar ──
+function filterTabsByRole() {
+    var rol = authService.getUserRole();
+    document.querySelectorAll('.cons-tab[data-roles]').forEach(function(btn) {
+        var permitidos = btn.getAttribute('data-roles').split(',');
+        if (permitidos.indexOf(rol) === -1) {
+            btn.style.display = 'none';
+        }
+    });
+}
+
+function renderList() {
+    var s = document.getElementById('searchInput').value.toLowerCase().trim();
+    var e = document.getElementById('filterEstatus').value;
+    var data = DB[currentTab];
+
+    var filtered = data.filter(function(r) {
+        var str = '';
+        if (currentTab==='usuarios') str = r.cedula + ' ' + r.grupo;
+        else if (currentTab==='grupos')  str = r.codigo + ' ' + r.nombre;
+        else if (currentTab==='puertas') str = r.nombre + ' ' + r.area;
+        else str = r.nombre;
+        return (!s || str.toLowerCase().includes(s)) && (!e || (r.estatus && r.estatus===e));
+    });
+
+    document.getElementById('listCount').textContent = filtered.length;
+    var el = document.getElementById('listItems');
+    el.innerHTML = '';
+
+    if (!filtered.length) {
+        el.innerHTML = '<div class="cons-empty"><i class="ti ti-search-off"></i>Sin resultados</div>';
+        return;
+    }
+
+    filtered.forEach(function(r) {
+        var div = document.createElement('div');
+        div.className = 'cons-list-item' + (selectedId===r.id ? ' selected' : '');
+        div.onclick = function() { selectItem(r.id, div); };
+
+        if (currentTab === 'usuarios') {
+            var cls = r.estatus==='Activo' ? 'clb-green' : 'clb-red';
+            div.innerHTML =
+                '<div class="cons-li-ico ico-green"><i class="ti ti-id-badge"></i></div>' +
+                '<div class="cons-li-info"><strong>' + r.cedula + '</strong><span>ID #' + String(r.id).padStart(3,'0') + ' · Grupo ' + r.grupo + '</span></div>' +
+                '<span class="cons-li-badge ' + cls + '">' + r.estatus + '</span>';
+
+        } else if (currentTab === 'grupos') {
+            var u = DB.usuarios.filter(function(x){return x.idGrupo===r.id;}).length;
+            var p = DB.accesos.filter(function(x){return x.idGrupo===r.id;}).length;
+            var cls = r.estatus==='Activo' ? 'clb-green' : 'clb-red';
+            div.innerHTML =
+                '<div class="cons-li-ico ico-blue"><i class="ti ti-users-group"></i></div>' +
+                '<div class="cons-li-info"><strong>' + r.codigo + ' — ' + r.nombre + '</strong><span>' + u + ' usuarios · ' + p + ' puertas</span></div>' +
+                '<span class="cons-li-badge ' + cls + '">' + r.estatus + '</span>';
+
+        } else if (currentTab === 'puertas') {
+            var gc = DB.accesos.filter(function(x){return x.idPuerta===r.id;}).length;
+            div.innerHTML =
+                '<div class="cons-li-ico ico-amber"><i class="ti ti-door"></i></div>' +
+                '<div class="cons-li-info"><strong>' + r.nombre + '</strong><span>' + r.area + ' · ' + gc + ' grupos con acceso</span></div>' +
+                '<span class="cons-li-badge clb-blue">' + gc + ' grupos</span>';
+
+        } else {
+            var pc = DB.puertas.filter(function(x){return x.idArea===r.id;}).length;
+            div.innerHTML =
+                '<div class="cons-li-ico ico-purple"><i class="ti ti-building"></i></div>' +
+                '<div class="cons-li-info"><strong>' + r.nombre + '</strong><span>' + pc + ' puertas</span></div>' +
+                '<span class="cons-li-badge clb-gray">' + pc + ' puertas</span>';
+        }
+        el.appendChild(div);
+    });
+}
+
+function filterList() { renderList(); }
+
+function selectItem(id, el) {
+    selectedId = id;
+    document.querySelectorAll('.cons-list-item').forEach(function(i){ i.classList.remove('selected'); });
+    el.classList.add('selected');
+    showDetail(id);
+}
+
+function showDetail(id) {
+    document.getElementById('detailEmpty').style.display = 'none';
+    var dc = document.getElementById('detailContent');
+    dc.style.display = 'block';
+    dc.innerHTML = '';
+
+    if (currentTab === 'usuarios') {
+        var u = DB.usuarios.find(function(x){return x.id===id;});
+        var g = gG(u.idGrupo);
+        var acc = DB.accesos.filter(function(a){return a.idGrupo===u.idGrupo;});
+        var puertas = acc.map(function(a){return gP(a.idPuerta);});
+        dc.innerHTML =
+            '<div class="cons-detail-hero">' +
+                '<div class="cons-hero-label">Usuario del Sistema</div>' +
+                '<h2>' + u.cedula + '</h2>' +
+                '<div class="cons-hero-sub">ID #' + String(u.id).padStart(3,'0') +
+                '<span class="cons-hero-badge ' + (u.estatus==='Activo'?'':'inactive') + '">' + u.estatus + '</span></div>' +
+            '</div>' +
+            '<div class="cons-detail-stats">' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Grupo</div><div class="cons-dstat-val sm">' + g.codigo + '</div></div>' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Puertas habilitadas</div><div class="cons-dstat-val green">' + puertas.length + '</div></div>' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Estatus</div><div class="cons-dstat-val sm ' + (u.estatus==='Activo'?'green':'red') + '">' + u.estatus + '</div></div>' +
+            '</div>' +
+            '<div class="cons-detail-section">' +
+                '<div class="cons-sec-title"><i class="ti ti-users-group"></i><span>Grupo asignado</span></div>' +
+                '<div class="cons-chip-row"><span class="cons-chip blue"><i class="ti ti-users-group"></i>' + g.codigo + ' — ' + g.nombre + '</span></div>' +
+            '</div>' +
+            '<div class="cons-detail-section">' +
+                '<div class="cons-sec-title"><i class="ti ti-door"></i><span>Puertas con acceso (via ' + g.codigo + ')</span></div>' +
+                '<div class="cons-chip-row">' + (puertas.length
+                    ? puertas.map(function(p){ return '<span class="cons-chip green"><i class="ti ti-door"></i>' + p.nombre + '<span class="cons-chip-area">' + p.area + '</span></span>'; }).join('')
+                    : '<span class="cons-no-data">Sin accesos registrados</span>') + '</div>' +
+            '</div>';
+
+    } else if (currentTab === 'grupos') {
+        var g = DB.grupos.find(function(x){return x.id===id;});
+        var usuarios = DB.usuarios.filter(function(u){return u.idGrupo===id;});
+        var acc = DB.accesos.filter(function(a){return a.idGrupo===id;});
+        var puertas = acc.map(function(a){return gP(a.idPuerta);});
+        var activos = usuarios.filter(function(u){return u.estatus==='Activo';}).length;
+        dc.innerHTML =
+            '<div class="cons-detail-hero">' +
+                '<div class="cons-hero-label">Grupo de Acceso</div>' +
+                '<h2>' + g.codigo + '</h2>' +
+                '<div class="cons-hero-sub">' + g.nombre +
+                '<span class="cons-hero-badge ' + (g.estatus==='Activo'?'':'inactive') + '">' + g.estatus + '</span></div>' +
+            '</div>' +
+            '<div class="cons-detail-stats">' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Total usuarios</div><div class="cons-dstat-val">' + usuarios.length + '</div></div>' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Activos</div><div class="cons-dstat-val green">' + activos + '</div></div>' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Puertas</div><div class="cons-dstat-val">' + puertas.length + '</div></div>' +
+            '</div>' +
+            '<div class="cons-detail-section">' +
+                '<div class="cons-sec-title"><i class="ti ti-door"></i><span>Puertas habilitadas para este grupo</span></div>' +
+                '<div class="cons-chip-row">' + (puertas.length
+                    ? puertas.map(function(p){ return '<span class="cons-chip green"><i class="ti ti-door"></i>' + p.nombre + '<span class="cons-chip-area">' + p.area + '</span></span>'; }).join('')
+                    : '<span class="cons-no-data">Sin accesos</span>') + '</div>' +
+            '</div>' +
+            '<div class="cons-detail-section">' +
+                '<div class="cons-sec-title"><i class="ti ti-users"></i><span>Usuarios del grupo</span></div>' +
+                '<table class="cons-mini-table"><thead><tr><th>ID</th><th>Cédula</th><th>Estatus</th></tr></thead><tbody>' +
+                (usuarios.length
+                    ? usuarios.map(function(u){ return '<tr><td>#' + String(u.id).padStart(3,'0') + '</td><td><strong>' + u.cedula + '</strong></td>' +
+                        '<td><span class="cons-pill ' + (u.estatus==='Activo'?'on':'off') + '">' + u.estatus + '</span></td></tr>'; }).join('')
+                    : '<tr><td colspan="3" style="text-align:center;padding:20px;color:#94a3b8">Sin usuarios</td></tr>') +
+                '</tbody></table>' +
+            '</div>';
+
+    } else if (currentTab === 'puertas') {
+        var p = DB.puertas.find(function(x){return x.id===id;});
+        var a = gA(p.idArea);
+        var acc = DB.accesos.filter(function(ac){return ac.idPuerta===id;});
+        var grupos = acc.map(function(ac){return gG(ac.idGrupo);});
+        var otras = DB.puertas.filter(function(pp){return pp.idArea===p.idArea&&pp.id!==p.id;});
+        dc.innerHTML =
+            '<div class="cons-detail-hero">' +
+                '<div class="cons-hero-label">Puerta de Acceso</div>' +
+                '<h2>' + p.nombre + '</h2>' +
+                '<div class="cons-hero-sub"><span class="cons-hero-badge">' + a.nombre + '</span></div>' +
+            '</div>' +
+            '<div class="cons-detail-stats">' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Grupos autorizados</div><div class="cons-dstat-val green">' + grupos.length + '</div></div>' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Área</div><div class="cons-dstat-val sm">' + a.nombre + '</div></div>' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Otras puertas</div><div class="cons-dstat-val">' + otras.length + '</div></div>' +
+            '</div>' +
+            '<div class="cons-detail-section">' +
+                '<div class="cons-sec-title"><i class="ti ti-users-group"></i><span>Grupos con acceso autorizado</span></div>' +
+                '<div class="cons-chip-row">' + (grupos.length
+                    ? grupos.map(function(g){ return '<span class="cons-chip blue"><i class="ti ti-users-group"></i>' + g.codigo + ' — ' + g.nombre + '</span>'; }).join('')
+                    : '<span class="cons-no-data">Ningún grupo autorizado</span>') + '</div>' +
+            '</div>' +
+            '<div class="cons-detail-section">' +
+                '<div class="cons-sec-title"><i class="ti ti-door"></i><span>Otras puertas en ' + a.nombre + '</span></div>' +
+                '<div class="cons-chip-row">' + (otras.length
+                    ? otras.map(function(pp){ return '<span class="cons-chip amber"><i class="ti ti-door"></i>' + pp.nombre + '</span>'; }).join('')
+                    : '<span class="cons-no-data">Ninguna</span>') + '</div>' +
+            '</div>';
+
+    } else if (currentTab === 'areas') {
+        var a = DB.areas.find(function(x){return x.id===id;});
+        var puertas = DB.puertas.filter(function(p){return p.idArea===id;});
+        var idsPuertas = puertas.map(function(p){return p.id;});
+        var acc = DB.accesos.filter(function(ac){return idsPuertas.indexOf(ac.idPuerta)!==-1;});
+        var idsG = [];
+        acc.forEach(function(ac){ if(idsG.indexOf(ac.idGrupo)===-1) idsG.push(ac.idGrupo); });
+        var grupos = idsG.map(function(gid){return gG(gid);});
+        dc.innerHTML =
+            '<div class="cons-detail-hero">' +
+                '<div class="cons-hero-label">Área del Sistema</div>' +
+                '<h2>' + a.nombre + '</h2>' +
+                '<div class="cons-hero-sub">ID Área #' + a.id + '</div>' +
+            '</div>' +
+            '<div class="cons-detail-stats">' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Puertas</div><div class="cons-dstat-val">' + puertas.length + '</div></div>' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Grupos con acceso</div><div class="cons-dstat-val green">' + grupos.length + '</div></div>' +
+                '<div class="cons-dstat"><div class="cons-dstat-label">Total accesos</div><div class="cons-dstat-val">' + acc.length + '</div></div>' +
+            '</div>' +
+            '<div class="cons-detail-section">' +
+                '<div class="cons-sec-title"><i class="ti ti-door"></i><span>Puertas en esta área</span></div>' +
+                '<table class="cons-mini-table"><thead><tr><th>Puerta</th><th>Grupos con acceso</th></tr></thead><tbody>' +
+                puertas.map(function(p){
+                    var gc = DB.accesos.filter(function(ac){return ac.idPuerta===p.id;}).length;
+                    return '<tr><td><strong>' + p.nombre + '</strong></td><td><span class="cons-pill on">' + gc + ' grupos</span></td></tr>';
+                }).join('') +
+                '</tbody></table>' +
+            '</div>' +
+            '<div class="cons-detail-section">' +
+                '<div class="cons-sec-title"><i class="ti ti-users-group"></i><span>Grupos con acceso al área</span></div>' +
+                '<div class="cons-chip-row">' + (grupos.length
+                    ? grupos.map(function(g){ return '<span class="cons-chip blue"><i class="ti ti-users-group"></i>' + g.codigo + ' — ' + g.nombre + '</span>'; }).join('')
+                    : '<span class="cons-no-data">Ningún grupo</span>') + '</div>' +
+            '</div>';
+    }
+}
+
+function clearDetail() {
+    selectedId = null;
+    document.getElementById('detailEmpty').style.display = 'flex';
+    document.getElementById('detailContent').style.display = 'none';
+    document.getElementById('detailContent').innerHTML = '';
+}
+
+window.addEventListener('load', function() {
+    filterTabsByRole();
+    loadAllData();
+});
+</script>
+</body>
+</html>

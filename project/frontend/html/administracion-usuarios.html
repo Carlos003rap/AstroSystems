@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración de Usuarios - ASTRO SISTEMAS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/administracion.css">
+</head>
+<body>
+<div class="admin-container">
+
+    <div id="sidebarRoot"></div>
+
+    <main class="admin-main" id="adminMain">
+
+        <div class="admin-header">
+            <div class="admin-header-left">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <div>
+                    <h1>Administración de Usuarios</h1>
+                    <p>Gestiona los usuarios del sistema de acceso</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Busqueda y filtros -->
+        <div class="search-bar">
+            <div class="search-wrap">
+                <i class="ti ti-search"></i>
+                <input type="text" id="searchInput" placeholder="Buscar por cédula..." oninput="filterTable()" autocomplete="off">
+            </div>
+            <div class="filter-sep"></div>
+            <div class="filter-select">
+                <label for="filterGrupo">Grupo</label>
+                <select id="filterGrupo" onchange="filterTable()">
+                    <option value="">Todos</option>
+                    <!-- Se puebla dinamicamente desde la API -->
+                </select>
+            </div>
+            <div class="filter-sep"></div>
+            <div class="filter-select">
+                <label for="filterEstatus">Estatus</label>
+                <select id="filterEstatus" onchange="filterTable()">
+                    <option value="">Todos</option>
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="table-section">
+            <div class="table-header">
+                <div>
+                    <h2>Usuarios Registrados</h2>
+                    <span><strong id="visibleCount">0</strong> usuarios encontrados</span>
+                </div>
+                <div class="table-actions">
+                    <button class="btn-export" onclick="exportTable('usersTable','csv')">
+                        <i class="ti ti-file-type-csv"></i>CSV
+                    </button>
+                    <button class="btn-export" onclick="exportTable('usersTable','xlsx')">
+                        <i class="ti ti-file-spreadsheet"></i>Excel
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cédula</th>
+                            <th>Grupo</th>
+                            <th>Estatus</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Vacio: se llena desde loadUsers() con la API -->
+                    </tbody>
+                </table>
+                <div class="no-results" id="noResults" style="display:none">
+                    <i class="ti ti-search-off"></i>
+                    No se encontraron usuarios con ese criterio
+                </div>
+                <div class="loading-state" id="loadingState">
+                    <i class="ti ti-loader-2"></i>
+                    Cargando usuarios...
+                </div>
+            </div>
+
+            <div class="pagination">
+                <button id="prevBtn" onclick="previousPage()" disabled>
+                    <i class="ti ti-chevron-left"></i> Anterior
+                </button>
+                <span id="pageInfo">Página 1 de 1</span>
+                <button id="nextBtn" onclick="nextPage()" disabled>
+                    Siguiente <i class="ti ti-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- MODAL EDITAR USUARIO -->
+<div class="modal" id="userModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Editar Usuario</h2>
+            <button class="close-btn" onclick="closeModal('userModal')">&#10005;</button>
+        </div>
+        <div class="modal-body">
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label for="userCedula">Cédula</label>
+                    <input type="text" id="userCedula" name="cedula" placeholder="Ej: 8-123-456" required>
+                </div>
+                <div class="form-group">
+                    <label for="userGrupo">Grupo</label>
+                    <select id="userGrupo" name="id_grupo" required>
+                        <option value="">-- Seleccionar grupo --</option>
+                        <!-- Se puebla desde la API -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="userEstatus">Estatus</label>
+                    <select id="userEstatus" name="estatus" required>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('userModal')">Cancelar</button>
+            <button class="btn-save" onclick="saveUser()">Guardar cambios</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/navbar.js"></script>
+<script src="js/administracion-usuarios.js"></script>
+<script>
+var allUsers  = [];   // cache de usuarios cargados
+var allGroups = [];   // cache de grupos
+
+// ── Cargar datos desde la API ──
+function loadUsers() {
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('noResults').style.display = 'none';
+
+    apiClient.getUsers(0, 100).then(function(data) {
+        allUsers = (data || []).map(function(u) {
+            return {
+                Id_usuario: u.idUsuario || u.id || u.Id_usuario,
+                Cedula: u.cedula || u.Cedula,
+                Id_grupo: u.grupo && (u.grupo.idGrupo || u.grupo.Id_grupo) ? (u.grupo.idGrupo || u.grupo.Id_grupo) : u.id_grupo,
+                grupoCodigo: u.grupo && (u.grupo.codigo || u.grupo.Codigo) ? (u.grupo.codigo || u.grupo.Codigo) : '',
+                Estatus: u.estatus || u.Estatus
+            };
+        });
+        renderUsers(allUsers);
+        document.getElementById('loadingState').style.display = 'none';
+    }).catch(function() {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('noResults').style.display = 'block';
+    });
+}
+
+function loadGroups() {
+    apiClient.getGroups(0, 100).then(function(grupos) {
+        allGroups = grupos || [];
+        var selFilter = document.getElementById('filterGrupo');
+        var selModal  = document.getElementById('userGrupo');
+        allGroups.forEach(function(g) {
+            selFilter.appendChild(new Option((g.codigo || g.Codigo) + ' - ' + (g.nombre || g.Nombre), g.codigo || g.Codigo));
+            selModal.appendChild(new Option((g.codigo || g.Codigo) + ' - ' + (g.nombre || g.Nombre), g.idGrupo || g.Id_grupo));
+        });
+    }).catch(function() {
+        console.error('No se pudieron cargar los grupos');
+    });
+}
+
+// ── Renderizar filas ──
+function renderUsers(users) {
+    var tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = '';
+
+    if (!users.length) {
+        document.getElementById('noResults').style.display = 'block';
+        document.getElementById('visibleCount').textContent = '0';
+        return;
+    }
+
+    document.getElementById('noResults').style.display = 'none';
+    document.getElementById('visibleCount').textContent = users.length;
+
+        users.forEach(function(u) {
+        var estadoClass = u.Estatus === 'Activo' ? 'status-active' : 'status-inactive';
+        var tr = document.createElement('tr');
+        tr.dataset.cedula  = (u.Cedula  || '').toLowerCase();
+        tr.dataset.grupo   = u.grupoCodigo || '';
+        tr.dataset.estatus = u.Estatus || '';
+        tr.innerHTML =
+            '<td>' + u.Id_usuario + '</td>' +
+            '<td>' + u.Cedula + '</td>' +
+            '<td><span class="group-pill">' + (u.grupoCodigo || u.Id_grupo) + '</span></td>' +
+            '<td><span class="status-badge ' + estadoClass + '">' + u.Estatus + '</span></td>' +
+            '<td><div class="action-btns">' +
+                '<a class="btn-action edit" role="link" href="editar-usuario.html?id=' + u.Id_usuario + '" title="Editar usuario ' + u.Id_usuario + '"><i class="ti ti-edit"></i>Editar</a>' +
+            '</div></td>';
+        tbody.appendChild(tr);
+    });
+}
+
+// ── Filtro en tiempo real ──
+function filterTable() {
+    var search  = document.getElementById('searchInput').value.toLowerCase().trim();
+    var grupo   = document.getElementById('filterGrupo').value;
+    var estatus = document.getElementById('filterEstatus').value;
+    var rows    = document.querySelectorAll('#usersTableBody tr');
+    var visible = 0;
+
+    rows.forEach(function(row) {
+        var ok = (!search  || row.dataset.cedula.includes(search))
+              && (!grupo   || row.dataset.grupo   === grupo)
+              && (!estatus || row.dataset.estatus === estatus);
+        row.style.display = ok ? '' : 'none';
+        if (ok) visible++;
+    });
+
+    document.getElementById('visibleCount').textContent = visible;
+    document.getElementById('noResults').style.display  = visible === 0 && rows.length > 0 ? 'block' : 'none';
+}
+
+// ── Modal editar ──
+function editUser(id) {
+    document.getElementById('modalTitle').textContent = 'Editar Usuario';
+    document.getElementById('userId').value = id;
+    document.getElementById('userForm').reset();
+    document.getElementById('userId').value = id;
+    document.getElementById('userModal').classList.add('show');
+
+    // TODO: cargar datos del usuario
+    // apiClient.request('/users/' + id).then(function(u) {
+    //     document.getElementById('userCedula').value  = u.Cedula;
+    //     document.getElementById('userGrupo').value   = u.Id_grupo;
+    //     document.getElementById('userEstatus').value = u.Estatus;
+    // });
+}
+
+// Nota: la acción de eliminar fue retirada de la interfaz; la función deleteUser
+// se mantiene comentada por compatibilidad si se decide reactivar más adelante.
+
+function saveUser() {
+    var cedula  = document.getElementById('userCedula').value.trim();
+    var grupo   = document.getElementById('userGrupo').value;
+    var estatus = document.getElementById('userEstatus').value;
+    if (!cedula || !grupo) {
+        alert('Por favor completa todos los campos.');
+        return;
+    }
+    var id = document.getElementById('userId').value;
+    // TODO: apiClient.request('/users/' + id, {
+    //     method: 'PUT',
+    //     body: JSON.stringify({ Cedula: cedula, Id_grupo: grupo, Estatus: estatus })
+    // }).then(function() { closeModal('userModal'); loadUsers(); });
+    alert('Cambios guardados (modo prueba)');
+    closeModal('userModal');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+}
+
+function previousPage() { /* TODO: paginacion con API */ }
+function nextPage()      { /* TODO: paginacion con API */ }
+
+// ── Init ──
+// Se ejecuta despues de que navbar.js termina de inyectar el sidebar
+window.addEventListener('load', function() {
+    loadGroups();
+    loadUsers();
+});
+</script>
+</body>
+</html>

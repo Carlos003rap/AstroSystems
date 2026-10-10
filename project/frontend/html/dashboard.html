@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control · ASTRO SISTEMAS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<div class="dashboard-container">
+ 
+    <!-- Sidebar inyectado por navbar.js -->
+    <div id="sidebarRoot"></div>
+ 
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="main-content" id="mainContent">
+ 
+        <div class="header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <div>
+                    <h1>Panel de Control</h1>
+                    <p>Resumen de operaciones y accesos del sistema</p>
+                </div>
+            </div>
+            <span class="role-badge" id="roleBadge">—</span>
+        </div>
+ 
+        <!-- Estadísticas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <span class="stat-label">Usuarios activos</span>
+                    <div class="stat-icon green"><i class="ti ti-users"></i></div>
+                </div>
+                <div class="stat-value" id="statUsuarios">—</div>
+                <div class="stat-sub">Registrados en el sistema</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <span class="stat-label">Grupos registrados</span>
+                    <div class="stat-icon blue"><i class="ti ti-users-group"></i></div>
+                </div>
+                <div class="stat-value" id="statGrupos">—</div>
+                <div class="stat-sub">Grupos académicos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <span class="stat-label">Accesos hoy</span>
+                    <div class="stat-icon amber"><i class="ti ti-login"></i></div>
+                </div>
+                <div class="stat-value" id="statAccesos">—</div>
+                <div class="stat-sub">Inicios de sesión</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <span class="stat-label">Cambios registrados</span>
+                    <div class="stat-icon red"><i class="ti ti-history"></i></div>
+                </div>
+                <div class="stat-value" id="statCambios">—</div>
+                <div class="stat-sub">Esta semana</div>
+            </div>
+        </div>
+ 
+        <!-- Cards de módulos -->
+        <div class="dashboard-grid">
+            <section class="dashboard-card" data-roles="ADMIN,USER,CONSULTOR" onclick="navigateTo('administracion-usuarios.html')">
+                <div class="card-head">
+                    <div class="card-icon"><i class="ti ti-users"></i></div>
+                    <div><p class="card-title">Administración de Usuarios</p><p class="card-desc">Gestiona los usuarios del sistema</p></div>
+                </div>
+                <button class="card-btn">Ir a Usuarios <i class="ti ti-arrow-right"></i></button>
+            </section>
+ 
+            <section class="dashboard-card" data-roles="ADMIN,USER,CONSULTOR" onclick="navigateTo('administracion-grupos.html')">
+                <div class="card-head">
+                    <div class="card-icon blue"><i class="ti ti-users-group"></i></div>
+                    <div><p class="card-title">Administración de Grupos</p><p class="card-desc">Gestiona los grupos académicos</p></div>
+                </div>
+                <button class="card-btn">Ir a Grupos <i class="ti ti-arrow-right"></i></button>
+            </section>
+ 
+            <section class="dashboard-card" data-roles="ADMIN,USER,CONSULTOR" onclick="navigateTo('consultas.html')">
+                <div class="card-head">
+                    <div class="card-icon amber"><i class="ti ti-search"></i></div>
+                    <div><p class="card-title">Consultas</p><p class="card-desc">Realiza búsquedas en la base de datos</p></div>
+                </div>
+                <button class="card-btn">Ir a Consultas <i class="ti ti-arrow-right"></i></button>
+            </section>
+ 
+            <section class="dashboard-card" data-roles="ADMIN,AUDITOR" onclick="navigateTo('auditoria.html?tab=cambios')">
+                <div class="card-head">
+                    <div class="card-icon purple"><i class="ti ti-git-commit"></i></div>
+                    <div><p class="card-title">Auditoría de Cambios</p><p class="card-desc">Revisa el historial de cambios</p></div>
+                </div>
+                <button class="card-btn">Ver Cambios <i class="ti ti-arrow-right"></i></button>
+            </section>
+ 
+            <section class="dashboard-card" data-roles="ADMIN,AUDITOR" onclick="navigateTo('auditoria.html?tab=login')">
+                <div class="card-head">
+                    <div class="card-icon teal"><i class="ti ti-shield-check"></i></div>
+                    <div><p class="card-title">Auditoría de Login</p><p class="card-desc">Revisa los accesos al sistema</p></div>
+                </div>
+                <button class="card-btn">Ver Accesos <i class="ti ti-arrow-right"></i></button>
+            </section>
+ 
+            <section class="dashboard-card">
+                <div class="card-head">
+                    <div class="card-icon gray"><i class="ti ti-info-circle"></i></div>
+                    <div><p class="card-title">Información del Sistema</p><p class="card-desc">Detalles del panel de administración</p></div>
+                </div>
+                <button class="card-btn disabled" disabled>Más Información <i class="ti ti-lock"></i></button>
+            </section>
+        </div>
+ 
+    </main>
+</div>
+ 
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/navbar.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

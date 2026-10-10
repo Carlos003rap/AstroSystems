@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoría - ASTRO SISTEMAS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/administracion.css">
+    <link rel="stylesheet" href="css/auditoria.css">
+</head>
+<body>
+<div class="admin-container">
+
+    <div id="sidebarRoot"></div>
+
+    <main class="admin-main" id="adminMain">
+
+        <div class="admin-header">
+            <div class="admin-header-left">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <div>
+                    <h1>Auditoría del Sistema</h1>
+                    <p>Registro de accesos y cambios realizados por los administradores</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="aud-tabs">
+            <button class="aud-tab" id="tabLogin" onclick="setTab('login',this)">
+                <i class="ti ti-login"></i>Auditoría de Login
+            </button>
+            <button class="aud-tab" id="tabCambios" onclick="setTab('cambios',this)">
+                <i class="ti ti-git-commit"></i>Auditoría de Cambios
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="aud-stats" id="statsRow"></div>
+
+        <!-- Filtros -->
+        <div class="aud-filters">
+            <div class="aud-ff grow">
+                <label>Buscar</label>
+                <div class="search-wrap">
+                    <i class="ti ti-search"></i>
+                    <input type="text" id="searchInput"
+                        placeholder="Buscar por administrador..."
+                        oninput="filterTable()"
+                        autocomplete="off"
+                        title="Buscar registros"
+                        aria-label="Buscar registros">
+                </div>
+            </div>
+            <div class="aud-ff" id="filterResWrap">
+                <label>Resultado</label>
+                <select id="filterRes" onchange="filterTable()"
+                    aria-label="Filtrar por resultado"
+                    title="Filtrar por resultado">
+                    <option value="">Todos</option>
+                    <option value="Exitoso">Exitoso</option>
+                    <option value="Fallido">Fallido</option>
+                </select>
+            </div>
+            <div class="aud-ff" id="filterTablaWrap">
+                <label>Tabla</label>
+                <select id="filterTabla" onchange="filterTable()"
+                    aria-label="Filtrar por tabla"
+                    title="Filtrar por tabla">
+                    <option value="">Todas</option>
+                    <option value="usuario">usuario</option>
+                    <option value="grupo">grupo</option>
+                    <option value="acceso_grupo">acceso_grupo</option>
+                    <option value="puerta">puerta</option>
+                    <option value="area">area</option>
+                </select>
+            </div>
+            <div class="aud-ff">
+                <label>Fecha desde</label>
+                <input type="date" id="filterDesde" onchange="filterTable()"
+                    title="Fecha desde" aria-label="Fecha desde">
+            </div>
+            <div class="aud-ff">
+                <label>Fecha hasta</label>
+                <input type="date" id="filterHasta" onchange="filterTable()"
+                    title="Fecha hasta" aria-label="Fecha hasta">
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="aud-table-card">
+            <div class="aud-table-top">
+                <div>
+                    <h3 id="tableTitle">Registro de Login</h3>
+                    <p id="tableCount" class="aud-count">0 registros encontrados</p>
+                </div>
+                <div class="export-btns">
+                    <button class="btn-export" onclick="exportTable('audTable','csv')">
+                        <i class="ti ti-file-type-csv"></i>CSV
+                    </button>
+                    <button class="btn-export" onclick="exportTable('audTable','xlsx')">
+                        <i class="ti ti-file-spreadsheet"></i>Excel
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="audTable">
+                    <thead id="tHead"></thead>
+                    <tbody id="tBody"></tbody>
+                </table>
+                <div class="no-results" id="emptyState" style="display:none">
+                    <i class="ti ti-search-off"></i>
+                    Sin registros encontrados
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/navbar.js"></script>
+<script>
+var currentTab = 'login';
+var DATA = { login: [], cambios: [] };
+
+var STATS = {
+    login: function() {
+        var ex     = DATA.login.filter(function(r){return r.resultado==='Exitoso';}).length;
+        var fa     = DATA.login.filter(function(r){return r.resultado==='Fallido';}).length;
+        var admins = [...new Set(DATA.login.map(function(r){return r.idAdmin;}))].length;
+        return [
+            {ico:'ti-login',       cls:'si-blue',  label:'Total accesos',  val:DATA.login.length},
+            {ico:'ti-circle-check',cls:'si-green', label:'Exitosos',       val:ex},
+            {ico:'ti-circle-x',    cls:'si-red',   label:'Fallidos',       val:fa},
+            {ico:'ti-user-shield', cls:'si-amber', label:'Admins activos', val:admins}
+        ];
+    },
+    cambios: function() {
+        var tablas = [...new Set(DATA.cambios.map(function(r){return r.tablaAfectada;}))].length;
+        var admins = [...new Set(DATA.cambios.map(function(r){return r.idAdmin;}))].length;
+        var dias   = [...new Set(DATA.cambios.map(function(r){return r.fecha;}))].length;
+        return [
+            {ico:'ti-history',   cls:'si-amber', label:'Total cambios',    val:DATA.cambios.length},
+            {ico:'ti-table',     cls:'si-blue',  label:'Tablas afectadas', val:tablas},
+            {ico:'ti-user-edit', cls:'si-green', label:'Administradores',  val:admins},
+            {ico:'ti-calendar',  cls:'si-red',   label:'Dias con cambios', val:dias}
+        ];
+    }
+};
+
+function setTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.aud-tab').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    history.replaceState(null, '', window.location.pathname + '?tab=' + tab);
+    document.getElementById('filterResWrap').style.display   = tab==='login'   ? '' : 'none';
+    document.getElementById('filterTablaWrap').style.display = tab==='cambios' ? '' : 'none';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterRes').value   = '';
+    document.getElementById('filterDesde').value = '';
+    document.getElementById('filterHasta').value = '';
+    document.getElementById('searchInput').placeholder = tab==='login'
+        ? 'Buscar por administrador...'
+        : 'Buscar por tabla, campo o admin...';
+    document.getElementById('tableTitle').textContent = tab==='login' ? 'Registro de Login' : 'Historial de Cambios';
+    renderStats();
+    renderTable();
+}
+
+function renderStats() {
+    var stats = STATS[currentTab]();
+    document.getElementById('statsRow').innerHTML = stats.map(function(s) {
+        return '<div class="aud-stat">' +
+            '<div class="aud-stat-ico ' + s.cls + '"><i class="ti ' + s.ico + '"></i></div>' +
+            '<div class="aud-stat-info"><span>' + s.label + '</span><strong>' + s.val + '</strong></div>' +
+        '</div>';
+    }).join('');
+}
+
+function renderTable() {
+    var data = DATA[currentTab];
+    var s = document.getElementById('searchInput').value.toLowerCase().trim();
+    var d = document.getElementById('filterDesde').value;
+    var h = document.getElementById('filterHasta').value;
+    var r = currentTab==='login'
+        ? document.getElementById('filterRes').value
+        : document.getElementById('filterTabla').value;
+
+    var filtered = data.filter(function(row) {
+        var str = (row.admin + ' ' + (row.resultado||'') + ' ' + (row.tablaAfectada||'') + ' ' + (row.campoEditado||'')).toLowerCase();
+        var matchS = !s || str.includes(s);
+        var matchR = !r || (currentTab==='login' ? row.resultado===r : row.tablaAfectada===r);
+        var matchD = !d || row.fecha >= d;
+        var matchH = !h || row.fecha <= h;
+        return matchS && matchR && matchD && matchH;
+    });
+
+    document.getElementById('tableCount').textContent = filtered.length + ' registros encontrados';
+    document.getElementById('emptyState').style.display = filtered.length ? 'none' : 'block';
+
+    if (currentTab === 'login') {
+        document.getElementById('tHead').innerHTML =
+            '<tr><th>ID</th><th>Administrador</th><th>Fecha</th><th>Hora</th><th>Resultado</th></tr>';
+        document.getElementById('tBody').innerHTML = filtered.map(function(r) {
+            var cls = r.resultado==='Exitoso' ? 'aud-pill-ok'     : 'aud-pill-fail';
+            var ico = r.resultado==='Exitoso' ? 'ti-circle-check' : 'ti-circle-x';
+            return '<tr>' +
+                '<td><span class="aud-id">#' + String(r.id).padStart(3,'0') + '</span></td>' +
+                '<td><span class="aud-admin-tag">' + (r.admin||'—') + '</span></td>' +
+                '<td>' + r.fecha + '</td>' +
+                '<td><span class="aud-time">' + r.hora + '</span></td>' +
+                '<td><span class="aud-pill ' + cls + '"><i class="ti ' + ico + '"></i>' + r.resultado + '</span></td>' +
+            '</tr>';
+        }).join('');
+    } else {
+        document.getElementById('tHead').innerHTML =
+            '<tr><th>ID</th><th>Administrador</th><th>Tabla</th><th>Campo</th><th>Valor anterior</th><th>Valor nuevo</th><th>Fecha</th><th>Hora</th></tr>';
+        document.getElementById('tBody').innerHTML = filtered.map(function(r) {
+            return '<tr>' +
+                '<td><span class="aud-id">#' + String(r.id).padStart(3,'0') + '</span></td>' +
+                '<td><span class="aud-admin-tag">' + (r.admin||'—') + '</span></td>' +
+                '<td><span class="aud-tabla-tag">' + (r.tablaAfectada||'—') + '</span></td>' +
+                '<td><strong>' + (r.campoEditado||'—') + '</strong></td>' +
+                '<td><span class="aud-val-old">' + (r.valorAnterior||'—') + '</span></td>' +
+                '<td><span class="aud-val-new">' + (r.valorNuevo||'—') + '</span></td>' +
+                '<td>' + r.fecha + '</td>' +
+                '<td><span class="aud-time">' + r.hora + '</span></td>' +
+            '</tr>';
+        }).join('');
+    }
+}
+
+function filterTable() { renderTable(); }
+
+// ── Cargar datos desde la API ──
+function cargarDatos(tab) {
+    Promise.all([
+        apiClient.getLoginLogs(0, 100),
+        apiClient.getAuditLogs(0, 100)
+    ]).then(function(results) {
+        var loginLogs = results[0].content || results[0];
+        var auditLogs = results[1].content || results[1];
+
+        DATA.login = loginLogs.map(function(l) {
+            var fechaCompleta = l.fecha || '';
+            var partes = fechaCompleta.split('T');
+            return {
+                id:        l.idAuditoriaLogin,
+                idAdmin:   l.admin ? l.admin.id : null,
+                admin:     l.admin ? l.admin.username : '—',
+                fecha:     partes[0] || '',
+                hora:      partes[1] ? partes[1].substring(0,8) : '',
+                resultado: l.resultado
+            };
+        });
+
+        DATA.cambios = auditLogs.map(function(l) {
+            var fechaCompleta = l.fecha || '';
+            var partes = fechaCompleta.split('T');
+            return {
+                id:            l.idAuditoriaEdicion,
+                idAdmin:       l.admin ? l.admin.id : null,
+                admin:         l.admin ? l.admin.username : '—',
+                tablaAfectada: l.tablaAfectada,
+                campoEditado:  l.campoEditado,
+                valorAnterior: l.valorAnterior,
+                valorNuevo:    l.valorNuevo,
+                fecha:         partes[0] || '',
+                hora:          partes[1] ? partes[1].substring(0,8) : ''
+            };
+        });
+
+        setTab(tab, document.getElementById(tab==='login' ? 'tabLogin' : 'tabCambios'));
+
+    }).catch(function(e) {
+        console.error('Error cargando auditoria:', e);
+        UIService.showError('Error al cargar auditoria');
+        setTab(tab, document.getElementById(tab==='login' ? 'tabLogin' : 'tabCambios'));
+    });
+}
+
+window.addEventListener('load', function() {
+    var params = new URLSearchParams(window.location.search);
+    var tab = params.get('tab') || 'login';
+    cargarDatos(tab);
+});
+</script>
+</body>
+</html>

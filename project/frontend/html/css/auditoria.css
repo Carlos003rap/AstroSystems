@@ -1,0 +1,322 @@
+/* ============================================
+   ESTILOS - AUDITORIA
+   ============================================ */
+
+/* Tabs */
+.aud-tabs {
+    background: white;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    padding: 5px;
+    display: flex;
+    gap: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.aud-tab {
+    flex: 1;
+    padding: 11px 10px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: all 0.2s;
+}
+
+.aud-tab i { font-size: 16px; }
+
+.aud-tab.active {
+    background: var(--color-primary);
+    color: white;
+    box-shadow: 0 2px 8px rgba(47,107,85,0.3);
+}
+
+.aud-tab:hover:not(.active) {
+    background: #f0f8f5;
+    color: var(--color-primary);
+}
+
+/* Stats */
+.aud-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+
+.aud-stat {
+    background: white;
+    border-radius: 13px;
+    padding: 18px 20px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: var(--transition);
+}
+
+.aud-stat:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.aud-stat-ico {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.si-green { background: #dcf0e8; color: #2f6b55; }
+.si-red   { background: #fee2e2; color: #dc2626; }
+.si-blue  { background: #dbeafe; color: #1d4ed8; }
+.si-amber { background: #fef3c7; color: #d97706; }
+
+.aud-stat-info span {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.aud-stat-info strong {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2933;
+}
+
+/* Filtros */
+.aud-filters {
+    background: white;
+    border-radius: 14px;
+    padding: 16px 18px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.aud-ff {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.aud-ff.grow { flex: 1; min-width: 180px; }
+
+.aud-ff label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.aud-ff .search-wrap {
+    position: relative;
+}
+
+.aud-ff .search-wrap i {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.aud-ff .search-wrap input {
+    width: 100%;
+    padding: 9px 12px 9px 32px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 9px;
+    font-size: 12px;
+    background: #f8fafc;
+    font-family: inherit;
+    transition: var(--transition);
+    min-width: unset;
+}
+
+.aud-ff .search-wrap input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(47,107,85,0.08);
+}
+
+.aud-ff input[type="date"],
+.aud-ff select {
+    padding: 9px 11px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 9px;
+    font-size: 12px;
+    background: #f8fafc;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition);
+    min-width: unset;
+}
+
+.aud-ff input[type="date"]:focus,
+.aud-ff select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: white;
+}
+
+/* Tabla card */
+.aud-table-card {
+    background: white;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.aud-table-top {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.aud-table-top h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2933;
+    margin: 0 0 3px;
+}
+
+.aud-count {
+    font-size: 11px;
+    color: #94a3b8;
+    margin: 0;
+}
+
+/* Tabla */
+.aud-table-card .table-wrapper table {
+    margin: 0;
+}
+
+.aud-table-card .table-wrapper thead tr {
+    background: var(--color-primary);
+}
+
+.aud-table-card .table-wrapper thead th {
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+    border: none;
+}
+
+.aud-table-card .table-wrapper tbody td {
+    padding: 10px 16px;
+    font-size: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #374151;
+    white-space: nowrap;
+}
+
+.aud-table-card .table-wrapper tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.aud-table-card .table-wrapper tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Elementos especiales de tabla */
+.aud-id {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    font-family: ui-monospace, monospace;
+}
+
+.aud-admin-tag {
+    background: #ede9fe;
+    color: #6d28d9;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.aud-tabla-tag {
+    background: #fef3c7;
+    color: #d97706;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+}
+
+.aud-time {
+    font-size: 11px;
+    color: #64748b;
+    font-family: ui-monospace, monospace;
+}
+
+.aud-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.aud-pill i { font-size: 12px; }
+
+.aud-pill-ok   { background: #dcf0e8; color: #2f6b55; }
+.aud-pill-fail { background: #fee2e2; color: #dc2626; }
+
+.aud-val-old {
+    font-size: 12px;
+    color: #dc2626;
+    text-decoration: line-through;
+    opacity: 0.8;
+}
+
+.aud-val-new {
+    font-size: 12px;
+    color: #2f6b55;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .aud-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+    .aud-stats  { grid-template-columns: 1fr 1fr; }
+    .aud-filters { flex-direction: column; }
+    .aud-ff.grow { min-width: 100%; }
+}
+
+/* Ocultar filtro tabla por defecto (se muestra via JS segun tab) */
+#filterTablaWrap { display: none; }

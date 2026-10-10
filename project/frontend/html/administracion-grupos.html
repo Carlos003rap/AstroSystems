@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración de Grupos - ASTRO SISTEMAS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/administracion.css">
+</head>
+<body>
+<div class="admin-container">
+
+    <div id="sidebarRoot"></div>
+
+    <main class="admin-main" id="adminMain">
+
+        <div class="admin-header">
+            <div class="admin-header-left">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <div>
+                    <h1>Administración de Grupos</h1>
+                    <p>Gestiona los grupos del sistema de acceso</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Busqueda y filtros -->
+        <div class="search-bar">
+            <div class="search-wrap">
+                <i class="ti ti-search"></i>
+                <input type="text" id="searchInput" placeholder="Buscar por código o nombre..." oninput="filterTable()" autocomplete="off">
+            </div>
+            <div class="filter-sep"></div>
+            <div class="filter-select">
+                <label for="filterEstatus">Estatus</label>
+                <select id="filterEstatus" onchange="filterTable()">
+                    <option value="">Todos</option>
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="table-section">
+            <div class="table-header">
+                <div>
+                    <h2>Grupos Registrados</h2>
+                    <span><strong id="visibleCount">0</strong> grupos encontrados</span>
+                </div>
+                <div class="table-actions">
+                    <button class="btn-export" onclick="exportTable('groupsTable','csv')">
+                        <i class="ti ti-file-type-csv"></i>CSV
+                    </button>
+                    <button class="btn-export" onclick="exportTable('groupsTable','xlsx')">
+                        <i class="ti ti-file-spreadsheet"></i>Excel
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="groupsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Estatus</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="groupsTableBody">
+                        <!-- Se llena desde loadGroups() -->
+                    </tbody>
+                </table>
+                <div class="no-results" id="noResults" style="display:none">
+                    <i class="ti ti-search-off"></i>
+                    No se encontraron grupos con ese criterio
+                </div>
+                <div class="loading-state" id="loadingState">
+                    <i class="ti ti-loader-2"></i>
+                    Cargando grupos...
+                </div>
+            </div>
+
+            <div class="pagination">
+                <button id="prevBtn" onclick="previousPage()" disabled>
+                    <i class="ti ti-chevron-left"></i> Anterior
+                </button>
+                <span id="pageInfo">Página 1 de 1</span>
+                <button id="nextBtn" onclick="nextPage()" disabled>
+                    Siguiente <i class="ti ti-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/navbar.js"></script>
+<script src="js/administracion-grupos.js"></script>
+<script>
+var allGroups = [];
+
+function loadGroups() {
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('noResults').style.display = 'none';
+
+    apiClient.getGroups(0, 100).then(function(data) {
+        allGroups = (data || []).map(function(g) {
+            return {
+                Id_grupo: g.idGrupo || g.Id_grupo,
+                Codigo: g.codigo || g.Codigo,
+                Nombre: g.nombre || g.Nombre,
+                Estatus: g.estatus || g.Estatus
+            };
+        });
+        renderGroups(allGroups);
+        document.getElementById('loadingState').style.display = 'none';
+    }).catch(function() {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('noResults').style.display = 'block';
+    });
+}
+
+function renderGroups(groups) {
+    var tbody = document.getElementById('groupsTableBody');
+    tbody.innerHTML = '';
+
+    if (!groups.length) {
+        document.getElementById('noResults').style.display = 'block';
+        document.getElementById('visibleCount').textContent = '0';
+        return;
+    }
+
+    document.getElementById('noResults').style.display = 'none';
+    document.getElementById('visibleCount').textContent = groups.length;
+
+    groups.forEach(function(g) {
+        var estadoClass = g.Estatus === 'Activo' ? 'status-active' : 'status-inactive';
+        var tr = document.createElement('tr');
+        tr.dataset.search  = (g.Codigo + ' ' + g.Nombre).toLowerCase();
+        tr.dataset.estatus = g.Estatus;
+        tr.innerHTML =
+            '<td>' + g.Id_grupo + '</td>' +
+            '<td><span class="code-pill-grupo">' + g.Codigo + '</span></td>' +
+            '<td>' + g.Nombre + '</td>' +
+            '<td><span class="status-badge ' + estadoClass + '">' + g.Estatus + '</span></td>' +
+            '<td><a class="btn-action edit" href="editar-grupo.html?id=' + g.Id_grupo + '">' +
+                '<i class="ti ti-edit"></i>Editar</a></td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function filterTable() {
+    var s = document.getElementById('searchInput').value.toLowerCase().trim();
+    var e = document.getElementById('filterEstatus').value;
+    var rows = document.querySelectorAll('#groupsTableBody tr');
+    var visible = 0;
+
+    rows.forEach(function(row) {
+        var ok = (!s || row.dataset.search.includes(s))
+              && (!e || row.dataset.estatus === e);
+        row.style.display = ok ? '' : 'none';
+        if (ok) visible++;
+    });
+
+    document.getElementById('visibleCount').textContent = visible;
+    document.getElementById('noResults').style.display = visible === 0 && rows.length > 0 ? 'block' : 'none';
+}
+
+function previousPage() { /* TODO */ }
+function nextPage()      { /* TODO */ }
+
+window.addEventListener('load', function() { loadGroups(); });
+</script>
+</body>
+</html>

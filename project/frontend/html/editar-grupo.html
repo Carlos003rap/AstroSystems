@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Grupo - ASTRO SISTEMAS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/administracion.css">
+    <link rel="stylesheet" href="css/editar-usuario.css">
+</head>
+<body>
+<div class="admin-container">
+
+    <div id="sidebarRoot"></div>
+
+    <main class="admin-main" id="adminMain">
+
+        <!-- Header -->
+        <div class="editor-header">
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                <i class="ti ti-menu-2"></i>
+            </button>
+            <button class="back-btn" onclick="navigateTo('administracion-grupos.html')" title="Volver">
+                <i class="ti ti-arrow-left"></i>
+            </button>
+            <div>
+                <h1>Editar Grupo <span id="headerGrupoId" class="header-id"></span></h1>
+                <p>Modifica los datos del grupo y sus accesos a puertas</p>
+            </div>
+        </div>
+
+        <!-- Info rapida -->
+        <div class="eu-info-grid">
+            <div class="eu-info-card">
+                <span>ID Grupo</span>
+                <strong id="infoId">—</strong>
+            </div>
+            <div class="eu-info-card">
+                <span>Código</span>
+                <strong id="infoCodigo">—</strong>
+            </div>
+            <div class="eu-info-card">
+                <span>Usuarios en grupo</span>
+                <strong id="infoUsuarios">—</strong>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="eu-form-card">
+            <p class="eu-card-title">
+                <i class="ti ti-users-group"></i>Datos del Grupo
+            </p>
+            <div class="eu-form-row">
+                <div class="eu-fg">
+                    <label for="groupCodigo">Código</label>
+                    <input type="text" id="groupCodigo" placeholder="Ej: G-101"
+                        title="Código del grupo" aria-label="Código del grupo" required>
+                </div>
+                <div class="eu-fg">
+                    <label for="groupNombre">Nombre</label>
+                    <input type="text" id="groupNombre" placeholder="Ej: Ingeniería Civil"
+                        title="Nombre del grupo" aria-label="Nombre del grupo" required>
+                </div>
+            </div>
+            <div class="eu-form-row">
+                <div class="eu-fg">
+                    <label for="groupEstatus">Estatus</label>
+                    <select id="groupEstatus" title="Estatus" aria-label="Estatus del grupo">
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                </div>
+                <div class="eu-fg"></div>
+            </div>
+            <div class="eu-form-footer">
+                <button type="button" class="btn-cancel" onclick="navigateTo('administracion-grupos.html')">
+                    Cancelar
+                </button>
+                <button type="button" class="btn-save" onclick="saveGroup()">
+                    <i class="ti ti-device-floppy"></i>Guardar cambios
+                </button>
+            </div>
+        </div>
+
+        <!-- Accesos del grupo -->
+        <div class="eu-access-card">
+            <p class="eu-card-title">
+                <i class="ti ti-door"></i>Accesos a Puertas
+            </p>
+            <p style="font-size:12px;color:#64748b;margin-bottom:14px">
+                Marca las puertas a las que este grupo tiene acceso.
+            </p>
+            <div id="puertasContainer">
+                <div class="eu-empty-access">
+                    <i class="ti ti-loader-2"></i> Cargando puertas...
+                </div>
+            </div>
+        </div>
+
+        <!-- Usuarios del grupo -->
+        <div class="eu-form-card">
+            <p class="eu-card-title">
+                <i class="ti ti-users"></i>Usuarios en este Grupo
+            </p>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cédula</th>
+                            <th>Estatus</th>
+                        </tr>
+                    </thead>
+                    <tbody id="groupUsersBody"></tbody>
+                </table>
+                <div class="no-results" id="noUsers" style="display:none">
+                    <i class="ti ti-user-off"></i>
+                    No hay usuarios en este grupo
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/navbar.js"></script>
+<script>
+window.addEventListener('load', function() {
+    var params = new URLSearchParams(window.location.search);
+    var id = params.get('id');
+    if (!id) return;
+
+    // 1. Cargar datos del grupo
+    apiClient.getGroupById(id).then(function(g) {
+        document.getElementById('headerGrupoId').textContent = '#' + g.idGrupo;
+        document.getElementById('infoId').textContent        = '#' + g.idGrupo;
+        document.getElementById('infoCodigo').textContent    = g.codigo || '—';
+        document.getElementById('groupCodigo').value         = g.codigo  || '';
+        document.getElementById('groupNombre').value         = g.nombre  || '';
+        document.getElementById('groupEstatus').value        = g.estatus || 'Activo';
+    }).catch(function(e) {
+        console.error(e);
+        UIService.showError('Error al cargar grupo');
+    });
+
+    // 2. Cargar usuarios del grupo
+    apiClient.request('/admin/usuarios?estatus=').then(function(res) {
+        var todos = res.content || res;
+        var usuarios = todos.filter(function(u) {
+            return u.grupo && String(u.grupo.idGrupo) === String(id);
+        });
+        document.getElementById('infoUsuarios').textContent = usuarios.length;
+        var tbody = document.getElementById('groupUsersBody');
+        tbody.innerHTML = '';
+        if (usuarios.length === 0) {
+            document.getElementById('noUsers').style.display = 'block';
+            return;
+        }
+        usuarios.forEach(function(u) {
+            var tr = document.createElement('tr');
+            var cls = u.estatus === 'Activo' ? 'status-active' : 'status-inactive';
+            tr.innerHTML = '<td>#' + String(u.idUsuario).padStart(3,'0') + '</td>' +
+                '<td>' + u.cedula + '</td>' +
+                '<td><span class="status-badge ' + cls + '">' + u.estatus + '</span></td>';
+            tbody.appendChild(tr);
+        });
+    }).catch(function(e) { console.error(e); });
+
+    // 3. Cargar puertas y marcar las que ya tiene el grupo
+    Promise.all([
+        apiClient.getPuertas(),
+        apiClient.getAccesosByGrupo(id)
+    ]).then(function(results) {
+        var puertas = results[0].content || results[0];
+        var accesos = results[1].content || results[1];
+        var idsPuertas = accesos.map(function(a) {
+            return a.puerta ? a.puerta.idPuerta : null;
+        });
+
+        var container = document.getElementById('puertasContainer');
+        container.innerHTML = '';
+
+        // Agrupar por area
+        var areas = {};
+        puertas.forEach(function(p) {
+            var areaNombre = p.area ? p.area.nombreArea : 'Sin área';
+            if (!areas[areaNombre]) areas[areaNombre] = [];
+            areas[areaNombre].push(p);
+        });
+
+        Object.keys(areas).forEach(function(areaNombre) {
+            var areaDiv = document.createElement('div');
+            areaDiv.className = 'puerta-area-group';
+            areaDiv.innerHTML = '<div class="puerta-area-title"><i class="ti ti-building"></i>' + areaNombre + '</div>';
+
+            areas[areaNombre].forEach(function(p) {
+                var activo = idsPuertas.indexOf(p.idPuerta) !== -1;
+                var label = document.createElement('label');
+                label.className = 'puerta-item' + (activo ? ' active' : '');
+                // ← CAMBIO: agrega data-original para saber el estado inicial
+                label.innerHTML =
+                    '<input type="checkbox" value="' + p.idPuerta + '" data-original="' + activo + '"' + (activo ? ' checked' : '') + '>' +
+                    '<i class="ti ti-door"></i>' +
+                    '<span>' + p.nombrePuerta + '</span>';
+                label.querySelector('input').addEventListener('change', function() {
+                    label.classList.toggle('active', this.checked);
+                });
+                areaDiv.appendChild(label);
+            });
+            container.appendChild(areaDiv);
+        });
+    }).catch(function(e) {
+        console.error(e);
+        document.getElementById('puertasContainer').innerHTML =
+            '<div class="eu-empty-access">Error al cargar puertas</div>';
+    });
+});
+
+function saveGroup() {
+    var params  = new URLSearchParams(window.location.search);
+    var id      = params.get('id');
+    var codigo  = document.getElementById('groupCodigo').value.trim();
+    var nombre  = document.getElementById('groupNombre').value.trim();
+    var estatus = document.getElementById('groupEstatus').value;
+
+    if (!codigo || !nombre) {
+        UIService.showError('Por favor completa todos los campos');
+        return;
+    }
+
+    var data    = { codigo: codigo, nombre: nombre, estatus: estatus };
+    var promise = id ? apiClient.updateGroup(id, data) : apiClient.createGroup(data);
+
+    promise.then(function(saved) {
+        var idGrupo = id || (saved ? saved.idGrupo : null);
+
+        // ← CAMBIO: solo sincroniza puertas que CAMBIARON
+        var checks = document.querySelectorAll('#puertasContainer input[type=checkbox]');
+        var ops = [];
+        checks.forEach(function(cb) {
+            var estabaActivo = cb.dataset.original === 'true';
+            var ahoraActivo  = cb.checked;
+
+            if (ahoraActivo && !estabaActivo) {
+                // Se agregó → registra en auditoría
+                ops.push(apiClient.addAcceso(idGrupo, cb.value).catch(function(){}));
+            } else if (!ahoraActivo && estabaActivo) {
+                // Se quitó → registra en auditoría
+                ops.push(apiClient.removeAcceso(idGrupo, cb.value).catch(function(){}));
+            }
+            // Sin cambio → no hace nada
+        });
+        return Promise.all(ops);
+    }).then(function() {
+        UIService.showSuccess('Grupo guardado correctamente');
+        setTimeout(function() { window.location.href = 'administracion-grupos.html'; }, 1200);
+    }).catch(function(e) {
+        console.error(e);
+        UIService.showError('Error al guardar el grupo');
+    });
+}
+</script>
+</body>
+</html>

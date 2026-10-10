@@ -1,0 +1,196 @@
+/* ============================================
+   ESTILOS GLOBALES - ASTRO SISTEMAS
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --color-primary: #2f6b55;
+    --color-secondary: #3d8a72;
+    --color-tertiary: #1f5d4a;
+    --color-danger: #c0392b;
+    --color-success: #27ae60;
+    --color-warning: #f39c12;
+    --color-light: #f5f7fa;
+    --color-border: #dfe3e8;
+    --color-text: #1f2933;
+    --color-text-light: #64748b;
+    --shadow-sm: 0 4px 16px rgba(28, 42, 54, 0.08);
+    --shadow-md: 0 20px 60px rgba(28, 42, 54, 0.12);
+    --transition: all 0.25s ease;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f2f5f8;
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 32px;
+}
+
+.page-header p {
+    color: var(--color-text-light);
+}
+
+.card {
+    background: white;
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.status-active { background: rgba(39, 174, 96, 0.15); color: #1f8f60; }
+.status-inactive { background: rgba(192, 57, 43, 0.12); color: #a92d24; }
+.status-success { background: rgba(39, 174, 96, 0.12); color: #1f8f60; }
+.status-warning { background: rgba(243, 156, 18, 0.16); color: #b06b07; }
+
+.table-card {
+    overflow-x: auto;
+}
+
+.table-card table {
+    min-width: 700px;
+}
+
+
+/* Botones generales */
+button {
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: var(--transition);
+    border-radius: 999px;
+    padding: 10px 16px;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: white;
+    border: 1px solid transparent;
+}
+
+.btn-primary:hover {
+    background-color: #3a6249;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.btn-small {
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+.btn-small {
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+/* Inputs generales */
+input, textarea, select {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 14px;
+    transition: var(--transition);
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(74, 124, 89, 0.1);
+}
+
+/* Títulos */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--color-text);
+    margin-bottom: 15px;
+}
+
+h1 { font-size: 32px; }
+h2 { font-size: 24px; }
+h3 { font-size: 20px; }
+h4 { font-size: 18px; }
+
+/* Links */
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+a:hover {
+    color: var(--color-tertiary);
+}
+
+/* Tabla base */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background: white;
+}
+
+thead {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+tbody tr:hover {
+    background-color: var(--color-light);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    h1 { font-size: 24px; }
+    h2 { font-size: 20px; }
+}
