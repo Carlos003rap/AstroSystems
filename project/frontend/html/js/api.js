@@ -1,9 +1,12 @@
 /* ============================================
    API SERVICE - Llamadas a endpoints
-   Backend: Spring Boot en http://localhost:8080/api
+   Backend local: http://localhost:8080/api
+   Backend en la nube: https://astro-backend-os4g.onrender.com/api
    ============================================ */
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8080/api'
+    : 'https://astro-backend-os4g.onrender.com/api';
 
 class ApiClient {
     constructor() {
@@ -22,7 +25,7 @@ class ApiClient {
         try {
             var response = await fetch(url, Object.assign({}, options, { headers: headers }));
 
-if (!response.ok) {
+            if (!response.ok) {
                 if (response.status === 401) {
                     localStorage.removeItem('authToken');
                     localStorage.removeItem('currentUser');
