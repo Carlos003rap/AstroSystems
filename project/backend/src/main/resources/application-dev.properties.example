@@ -1,0 +1,4 @@
+spring.datasource.password=2005
+app.jwt.secret=AstroSistemas2026SecretKeyForJWTTokenGenerationAndValidationMinimum256Bits
+spring.mail.username=alberto.gonzalez03122005@gmail.com
+spring.mail.password=ifdgezegpteouzsm
