@@ -22,8 +22,19 @@ class AuthService {
         return user ? JSON.parse(user) : null;
     }
 
+    // Ademas de existir, el token no debe estar vencido (localStorage no caduca solo,
+    // la cookie del servidor si)
     isAuthenticated() {
-        return !!this.getToken();
+        var token = this.getToken();
+        if (!token) return false;
+        try {
+            // El JWT viene en base64url: se pasa a base64 normal para que atob lo entienda
+            var parte = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            var payload = JSON.parse(atob(parte));
+            return !payload.exp || payload.exp * 1000 > Date.now();
+        } catch (e) {
+            return false;
+        }
     }
 
     logout() {

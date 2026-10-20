@@ -152,8 +152,10 @@ function renderGroups(groups) {
             '<td><span class="code-pill-grupo">' + g.Codigo + '</span></td>' +
             '<td>' + g.Nombre + '</td>' +
             '<td><span class="status-badge ' + estadoClass + '">' + g.Estatus + '</span></td>' +
-            '<td><a class="btn-action edit" href="editar-grupo.html?id=' + g.Id_grupo + '">' +
-                '<i class="ti ti-edit"></i>Editar</a></td>';
+            '<td>' + (authService.getUserRole() === 'ADMIN'
+                ? '<a class="btn-action edit" href="editar-grupo.html?id=' + g.Id_grupo + '">' +
+                    '<i class="ti ti-edit"></i>Editar</a>'
+                : '<span class="text-muted">Solo lectura</span>') + '</td>';
         tbody.appendChild(tr);
     });
 }

@@ -51,11 +51,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             // Se consulta al usuario en cada peticion: si fue desactivado o cambio de rol,
             // el token viejo deja de servir de inmediato
             Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(username);
-            if (usuarioOpt.isPresent()
-                    && Boolean.TRUE.equals(usuarioOpt.get().getEstado())
-                    && usuarioOpt.get().getRol() != null) {
+            if (usuarioOpt.isPresent() && Boolean.TRUE.equals(usuarioOpt.get().getEstado())) {
 
-                String rol = usuarioOpt.get().getRol().name();
+                // Mismo valor por defecto que el login (AuthController): sin rol se trata como USER
+                Usuario.Rol rolUsuario = usuarioOpt.get().getRol();
+                String rol = (rolUsuario != null ? rolUsuario : Usuario.Rol.USER).name();
                 var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + rol));
                 var authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);

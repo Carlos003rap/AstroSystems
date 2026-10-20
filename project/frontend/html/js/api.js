@@ -38,10 +38,10 @@ class ApiClient {
 
             if (!response.ok) {
                 var esAuth = endpoint.indexOf('/auth/') === 0;
+                // Sesion vencida o revocada: login.js limpia el navegador, borra la cookie y avisa
                 if (response.status === 401 && !esAuth) {
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('currentUser');
-                    window.location.href = 'login.html';
+                    window.location.replace('login.html?sesion=expirada');
+                    return {};
                 }
                 if (response.status === 403) {
                     throw new Error('No tienes permiso para realizar esta acción con tu rol actual.');
