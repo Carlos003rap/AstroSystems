@@ -217,7 +217,9 @@ function renderUsers(users) {
             '<td><span class="group-pill">' + (u.grupoCodigo || u.Id_grupo) + '</span></td>' +
             '<td><span class="status-badge ' + estadoClass + '">' + u.Estatus + '</span></td>' +
             '<td><div class="action-btns">' +
-                '<a class="btn-action edit" role="link" href="editar-usuario.html?id=' + u.Id_usuario + '" title="Editar usuario ' + u.Id_usuario + '"><i class="ti ti-edit"></i>Editar</a>' +
+                (authService.getUserRole() === 'ADMIN'
+                    ? '<a class="btn-action edit" role="link" href="editar-usuario.html?id=' + u.Id_usuario + '" title="Editar usuario ' + u.Id_usuario + '"><i class="ti ti-edit"></i>Editar</a>'
+                    : '<span class="text-muted">Solo lectura</span>') +
             '</div></td>';
         tbody.appendChild(tr);
     });

@@ -1,0 +1,12 @@
+backend/target/
+frontend/node_modules/
+frontend/dist/
+*.log
+.idea/
+.vscode/
+
+# Nunca meter credenciales locales ni respaldos de la base de datos en la imagen
+**/application-dev.properties
+**/.env
+**/*.env
+**/*.sql

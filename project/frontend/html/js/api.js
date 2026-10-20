@@ -1,12 +1,23 @@
 /* ============================================
    API SERVICE - Llamadas a endpoints
-   Backend local: http://localhost:8080/api
-   Backend en la nube: https://astro-backend-os4g.onrender.com/api
+   Las paginas ahora las sirve el propio backend, asi que la API queda en /api
+   (en la laptop: http://localhost:8080 ; en la nube: https://astro-backend-os4g.onrender.com)
    ============================================ */
 
-const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:8080/api'
-    : 'https://astro-backend-os4g.onrender.com/api';
+const API_BASE_URL = (function () {
+    var host  = window.location.hostname;
+    var port  = window.location.port;
+    var local = host === 'localhost' || host === '127.0.0.1';
+
+    // Live Server o Vite en la laptop: el backend esta en otro puerto
+    if (local && port !== '8080') return 'http://localhost:8080/api';
+
+    // Sitio estatico anterior en Render: el backend esta en otra direccion
+    if (host === 'astro-frontend-de7m.onrender.com') return 'https://astro-backend-os4g.onrender.com/api';
+
+    // Paginas servidas por el propio backend (localhost:8080 o Render): misma direccion
+    return '/api';
+})();
 
 class ApiClient {
     constructor() {
@@ -23,14 +34,14 @@ class ApiClient {
         if (token) headers['Authorization'] = 'Bearer ' + token;
 
         try {
-            var response = await fetch(url, Object.assign({}, options, { headers: headers }));
+            var response = await fetch(url, Object.assign({ credentials: 'include' }, options, { headers: headers }));
 
             if (!response.ok) {
                 var esAuth = endpoint.indexOf('/auth/') === 0;
+                // Sesion vencida o revocada: login.js limpia el navegador, borra la cookie y avisa
                 if (response.status === 401 && !esAuth) {
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('currentUser');
-                    window.location.href = 'login.html';
+                    window.location.replace('login.html?sesion=expirada');
+                    return {};
                 }
                 if (response.status === 403) {
                     throw new Error('No tienes permiso para realizar esta acción con tu rol actual.');

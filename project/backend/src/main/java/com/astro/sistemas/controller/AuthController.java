@@ -3,15 +3,21 @@ package com.astro.sistemas.controller;
 import com.astro.sistemas.model.AuditoriaLogin;
 import com.astro.sistemas.model.Usuario;
 import com.astro.sistemas.repository.AuditoriaLoginRepository;
+import com.astro.sistemas.security.JwtAuthFilter;
 import com.astro.sistemas.security.JwtUtils;
 import com.astro.sistemas.service.UsuarioService;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +38,9 @@ public class AuthController {
     @Autowired private AuditoriaLoginRepository auditoriaLoginRepo;
     @Autowired private PasswordEncoder passwordEncoder;
 
+    @Value("${app.jwt.expiration}")
+    private long expiracionMs;
+
     private String hashFalso;
 
     @PostConstruct
@@ -40,7 +49,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials,
+                                   HttpServletRequest request) {
         String username = credentials.get("username");
         String password = credentials.get("password");
 
@@ -95,12 +105,38 @@ public class AuthController {
 
             registrarLogin(usuario, "Exitoso");
 
-            return ResponseEntity.ok(response);
+            // Ademas del token en el JSON (lo usa el frontend para la API), se guarda en una cookie
+            // HttpOnly para que el servidor pueda validar la sesion antes de entregar las paginas
+            ResponseCookie cookie = ResponseCookie.from(JwtAuthFilter.COOKIE_NAME, token)
+                    .httpOnly(true)
+                    .secure(request.isSecure())
+                    .sameSite("Lax")
+                    .path("/")
+                    .maxAge(Duration.ofMillis(expiracionMs))
+                    .build();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(response);
 
         } catch (Exception e) {
             System.out.println("Aviso: error inesperado en el login - " + e.getMessage());
             return respuestaError(HttpStatus.BAD_REQUEST, MENSAJE_CREDENCIALES);
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        ResponseCookie borrar = ResponseCookie.from(JwtAuthFilter.COOKIE_NAME, "")
+                .httpOnly(true)
+                .secure(request.isSecure())
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, borrar.toString())
+                .body(Map.of("message", "Sesión cerrada"));
     }
 
     @PostMapping("/forgot-password")

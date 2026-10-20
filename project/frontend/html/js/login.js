@@ -30,6 +30,17 @@ document.addEventListener('DOMContentLoaded', function() {
     var userInput  = document.getElementById('username');
     var passInput  = document.getElementById('password');
 
+    // Si el servidor mando al login porque no hay sesion valida, se limpia lo guardado en el
+    // navegador (evita un bucle login -> dashboard -> login) y se avisa al usuario
+    var sesionExpirada = new URLSearchParams(window.location.search).get('sesion') === 'expirada';
+    if (sesionExpirada) {
+        authService.logout();
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+        showLoginError('Tu sesión no está activa o expiró. Inicia sesión de nuevo.');
+    }
+
     // Si ya está autenticado, ir al dashboard
     if (authService.isAuthenticated()) {
         window.location.replace('dashboard.html');
