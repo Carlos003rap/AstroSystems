@@ -133,7 +133,7 @@ function navigateTo(page) {
 function handleLogout() {
     if (confirm('¿Está seguro que desea cerrar sesión?')) {
         authService.logout();
-        window.location.href = 'login.html';
+        window.location.replace('login.html');
     }
 }
 
@@ -162,6 +162,17 @@ function exportTable(tableId, format = 'csv') {
     link.click();
     document.body.removeChild(link);
 }
+
+// Al volver con el boton "atras" despues de cerrar sesion, el navegador puede
+// mostrar la pagina guardada en memoria. Aqui se vuelve a revisar la sesion.
+window.addEventListener('pageshow', (event) => {
+    const paginaActual = window.location.pathname;
+    const esPublica = ['login.html', 'index.html', 'forgot-password.html', 'reset-password.html']
+        .some(nombre => paginaActual.includes(nombre));
+    if (!esPublica && event.persisted) {
+        authService.checkAuth();
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     const currentPage = window.location.pathname;

@@ -52,7 +52,7 @@ class AuthService {
     // ── CRÍTICO: corregido — sin slash inicial ──
     checkAuth() {
         if (!this.isAuthenticated()) {
-            window.location.href = 'login.html';
+            window.location.replace('login.html');
             return false;
         }
         return true;

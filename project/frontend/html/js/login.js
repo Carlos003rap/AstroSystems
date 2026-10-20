@@ -2,21 +2,53 @@
    LOGIN LOGIC
    ============================================ */
 
+var CLAVE_USUARIO_RECORDADO = 'usuarioRecordado';
+
+function leerUsuarioRecordado() {
+    try {
+        return localStorage.getItem(CLAVE_USUARIO_RECORDADO) || '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function guardarUsuarioRecordado(username, recordar) {
+    try {
+        if (recordar) {
+            localStorage.setItem(CLAVE_USUARIO_RECORDADO, username);
+        } else {
+            localStorage.removeItem(CLAVE_USUARIO_RECORDADO);
+        }
+    } catch (e) {}
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    var loginForm = document.getElementById('loginForm');
-    var loginBtn  = document.getElementById('loginBtn');
+    var loginForm  = document.getElementById('loginForm');
+    var loginBtn   = document.getElementById('loginBtn');
+    var clearBtn   = document.getElementById('clearBtn');
+    var rememberCk = document.getElementById('rememberUser');
+    var userInput  = document.getElementById('username');
+    var passInput  = document.getElementById('password');
 
     // Si ya está autenticado, ir al dashboard
     if (authService.isAuthenticated()) {
-        window.location.href = 'dashboard.html';
+        window.location.replace('dashboard.html');
         return;
+    }
+
+    // Rellenar el usuario recordado (nunca se guarda la contraseña)
+    var recordado = leerUsuarioRecordado();
+    if (recordado) {
+        userInput.value = recordado;
+        rememberCk.checked = true;
+        passInput.focus();
     }
 
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        var username = document.getElementById('username').value.trim();
-        var password = document.getElementById('password').value.trim();
+        var username = userInput.value.trim();
+        var password = passInput.value.trim();
 
         if (!username || !password) {
             showLoginError('Por favor completa todos los campos');
@@ -31,14 +63,16 @@ document.addEventListener('DOMContentLoaded', function() {
             var result = await authService.login(username, password);
 
             if (result.success) {
+                guardarUsuarioRecordado(username, rememberCk.checked);
+
                 loginBtn.innerHTML = '<i class="ti ti-check"></i> Sesion iniciada';
                 loginBtn.style.background = 'linear-gradient(135deg,#27ae60,#1e9b55)';
 
                 setTimeout(function() {
-                    window.location.href = 'dashboard.html';
+                    window.location.replace('dashboard.html');
                 }, 600);
             } else {
-                showLoginError(result.message || 'Usuario o contrasena incorrectos');
+                showLoginError(result.message || 'Usuario o contraseña incorrectos');
                 resetLoginBtn();
             }
         } catch (error) {
@@ -47,21 +81,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Botón limpiar: vacía los campos y quita el mensaje de error
+    clearBtn.addEventListener('click', function() {
+        loginForm.reset();
+        userInput.value = '';
+        passInput.value = '';
+        rememberCk.checked = false;
+        passInput.type = 'password';
+
+        var icon = document.getElementById('toggleIcon');
+        if (icon) icon.className = 'ti ti-eye';
+
+        var errorMsg = document.getElementById('errorMessage');
+        if (errorMsg) errorMsg.classList.remove('show');
+
+        userInput.focus();
+    });
+
     // Toggle mostrar/ocultar contrasena
     var togglePassword = document.getElementById('togglePassword');
     if (togglePassword) {
         togglePassword.addEventListener('click', function() {
-            var input = document.getElementById('password');
             var icon  = document.getElementById('toggleIcon');
-            var isPass = input.type === 'password';
-            input.type = isPass ? 'text' : 'password';
+            var isPass = passInput.type === 'password';
+            passInput.type = isPass ? 'text' : 'password';
             if (icon) icon.className = isPass ? 'ti ti-eye-off' : 'ti ti-eye';
         });
     }
 
-    // Enter en cualquier campo dispara el submit
+    // Enter en los campos de texto dispara el submit
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !loginBtn.disabled) loginForm.requestSubmit();
+        if (e.key !== 'Enter' || loginBtn.disabled) return;
+        var id = e.target && e.target.id;
+        if (id === 'username' || id === 'password') {
+            loginForm.requestSubmit();
+        }
     });
 });
 
