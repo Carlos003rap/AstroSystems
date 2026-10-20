@@ -11,8 +11,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class UsuarioService {
@@ -34,12 +36,24 @@ public class UsuarioService {
 
     private static final long DURACION_TOKEN_MS = 15 * 60 * 1000;
     private static final long COOLDOWN_SOLICITUD_MS = 60 * 1000;
+    private static final Pattern PATRON_EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     public List<Usuario> listarUsuarios() {
         return usuarioRepository.findAll();
     }
 
     public Usuario crearUsuario(Usuario usuario) {
+        if (usuario.getUsername() == null || usuario.getUsername().isBlank()) {
+            throw new IllegalArgumentException("El nombre de usuario es obligatorio");
+        }
+        if (usuario.getPassword() == null || usuario.getPassword().isBlank()) {
+            throw new IllegalArgumentException("La contraseña es obligatoria");
+        }
+        validarEmail(usuario.getEmail());
+
+        usuario.setUsername(usuario.getUsername().trim());
+        usuario.setEmail(usuario.getEmail().trim());
+
         if (usuarioRepository.existsByUsername(usuario.getUsername())) {
             throw new RuntimeException("El usuario ya existe");
         }
@@ -48,6 +62,15 @@ public class UsuarioService {
         }
         usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
         return usuarioRepository.save(usuario);
+    }
+
+    private void validarEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("El correo es obligatorio");
+        }
+        if (!PATRON_EMAIL.matcher(email.trim()).matches()) {
+            throw new IllegalArgumentException("El correo no tiene un formato válido");
+        }
     }
 
     public Optional<Usuario> obtenerPorUsername(String username) {
@@ -64,19 +87,36 @@ public class UsuarioService {
 
     public Usuario obtenerPorId(Long id) {
         return usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
     }
 
     public Usuario actualizarUsuario(Usuario usuario) {
         Usuario existente = obtenerPorId(usuario.getId());
+
+        if (usuario.getEmail() != null) {
+            validarEmail(usuario.getEmail());
+            String nuevoEmail = usuario.getEmail().trim();
+            if (!nuevoEmail.equalsIgnoreCase(existente.getEmail())
+                    && usuarioRepository.existsByEmail(nuevoEmail)) {
+                throw new RuntimeException("El email ya está registrado");
+            }
+            existente.setEmail(nuevoEmail);
+        }
+
         existente.setNombreCompleto(usuario.getNombreCompleto());
-        existente.setEmail(usuario.getEmail());
-        existente.setEstado(usuario.getEstado());
-        existente.setRol(usuario.getRol());
+        if (usuario.getEstado() != null) {
+            existente.setEstado(usuario.getEstado());
+        }
+        if (usuario.getRol() != null) {
+            existente.setRol(usuario.getRol());
+        }
         return usuarioRepository.save(existente);
     }
 
     public void eliminarUsuario(Long id) {
+        if (!usuarioRepository.existsById(id)) {
+            throw new NoSuchElementException("Usuario no encontrado");
+        }
         usuarioRepository.deleteById(id);
     }
 

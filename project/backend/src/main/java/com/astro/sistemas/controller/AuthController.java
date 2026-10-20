@@ -5,33 +5,68 @@ import com.astro.sistemas.model.Usuario;
 import com.astro.sistemas.repository.AuditoriaLoginRepository;
 import com.astro.sistemas.security.JwtUtils;
 import com.astro.sistemas.service.UsuarioService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private static final int MAX_INTENTOS_FALLIDOS = 5;
+    private static final int MINUTOS_VENTANA = 15;
+    private static final String MENSAJE_CREDENCIALES = "Usuario o contraseña incorrectos";
+    private static final String MENSAJE_BLOQUEO =
+            "Demasiados intentos fallidos. Espera " + MINUTOS_VENTANA + " minutos e inténtalo de nuevo.";
+
     @Autowired private UsuarioService usuarioService;
     @Autowired private JwtUtils jwtUtils;
     @Autowired private AuditoriaLoginRepository auditoriaLoginRepo;
+    @Autowired private PasswordEncoder passwordEncoder;
+
+    private String hashFalso;
+
+    @PostConstruct
+    public void init() {
+        hashFalso = passwordEncoder.encode("hash-falso-para-igualar-tiempos");
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");
         String password = credentials.get("password");
 
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+            return respuestaError(HttpStatus.BAD_REQUEST, MENSAJE_CREDENCIALES);
+        }
+
         try {
-            var usuario = usuarioService.obtenerPorUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            Optional<Usuario> usuarioOpt = usuarioService.obtenerPorUsername(username.trim());
+
+            if (usuarioOpt.isEmpty()) {
+                // Se compara contra un hash falso para que tarde lo mismo que un usuario real
+                usuarioService.verificarPassword(password, hashFalso);
+                return respuestaError(HttpStatus.BAD_REQUEST, MENSAJE_CREDENCIALES);
+            }
+
+            Usuario usuario = usuarioOpt.get();
+
+            if (estaBloqueado(usuario)) {
+                registrarLogin(usuario, "Bloqueado");
+                return respuestaError(HttpStatus.TOO_MANY_REQUESTS, MENSAJE_BLOQUEO);
+            }
 
             if (!usuarioService.verificarPassword(password, usuario.getPassword())) {
                 registrarLogin(usuario, "Fallido");
-                return ResponseEntity.badRequest().body("Contrasena incorrecta");
+                return respuestaError(HttpStatus.BAD_REQUEST, MENSAJE_CREDENCIALES);
             }
 
             String token = jwtUtils.generateJwtToken(usuario.getUsername(), usuario.getRol().name());
@@ -52,7 +87,8 @@ public class AuthController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            System.out.println("Aviso: error inesperado en el login - " + e.getMessage());
+            return respuestaError(HttpStatus.BAD_REQUEST, MENSAJE_CREDENCIALES);
         }
     }
 
@@ -90,6 +126,25 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
+    }
+
+    private boolean estaBloqueado(Usuario usuario) {
+        LocalDateTime desde = LocalDateTime.now().minusMinutes(MINUTOS_VENTANA);
+
+        // Un login exitoso reinicia el conteo de fallos
+        Optional<AuditoriaLogin> ultimoExito =
+                auditoriaLoginRepo.findFirstByAdminAndResultadoOrderByFechaDesc(usuario, "Exitoso");
+        if (ultimoExito.isPresent() && ultimoExito.get().getFecha() != null
+                && ultimoExito.get().getFecha().isAfter(desde)) {
+            desde = ultimoExito.get().getFecha();
+        }
+
+        long fallos = auditoriaLoginRepo.countByAdminAndResultadoAndFechaAfter(usuario, "Fallido", desde);
+        return fallos >= MAX_INTENTOS_FALLIDOS;
+    }
+
+    private ResponseEntity<?> respuestaError(HttpStatus status, String mensaje) {
+        return ResponseEntity.status(status).body(Map.of("message", mensaje));
     }
 
     private void registrarLogin(Usuario admin, String resultado) {

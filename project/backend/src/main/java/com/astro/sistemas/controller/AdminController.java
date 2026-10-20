@@ -3,11 +3,14 @@ package com.astro.sistemas.controller;
 import com.astro.sistemas.model.Usuario;
 import com.astro.sistemas.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Gestión de administradores del panel (tabla: usuarios)
@@ -42,7 +45,7 @@ public class AdminController {
     @PostMapping
     public ResponseEntity<?> crear(@RequestBody Usuario usuario) {
         try {
-            return ResponseEntity.ok(usuarioService.crearUsuario(usuario));
+            return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.crearUsuario(usuario));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -54,6 +57,8 @@ public class AdminController {
         try {
             usuario.setId(id);
             return ResponseEntity.ok(usuarioService.actualizarUsuario(usuario));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -64,8 +69,13 @@ public class AdminController {
         try {
             usuarioService.eliminarUsuario(id);
             return ResponseEntity.ok().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("No se puede eliminar este usuario porque tiene registros de auditoría asociados. Desactívalo en su lugar.");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body("No se pudo eliminar el usuario");
         }
     }
 }

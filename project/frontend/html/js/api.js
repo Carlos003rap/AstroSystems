@@ -26,7 +26,8 @@ class ApiClient {
             var response = await fetch(url, Object.assign({}, options, { headers: headers }));
 
             if (!response.ok) {
-                if (response.status === 401) {
+                var esAuth = endpoint.indexOf('/auth/') === 0;
+                if (response.status === 401 && !esAuth) {
                     localStorage.removeItem('authToken');
                     localStorage.removeItem('currentUser');
                     window.location.href = 'login.html';
@@ -34,7 +35,19 @@ class ApiClient {
                 if (response.status === 403) {
                     throw new Error('No tienes permiso para realizar esta acción con tu rol actual.');
                 }
-                throw new Error('Error ' + response.status + ': ' + response.statusText);
+                var mensajeServidor = '';
+                try {
+                    var cuerpo = await response.text();
+                    if (cuerpo) {
+                        try {
+                            var datos = JSON.parse(cuerpo);
+                            mensajeServidor = datos.message || '';
+                        } catch (e) {
+                            mensajeServidor = cuerpo.length < 200 ? cuerpo : '';
+                        }
+                    }
+                } catch (e) {}
+                throw new Error(mensajeServidor || ('Error ' + response.status + ': ' + response.statusText));
             }
             // Respuesta vacía (ej. DELETE 204)
             var text = await response.text();
