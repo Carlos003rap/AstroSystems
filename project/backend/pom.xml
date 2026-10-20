@@ -98,6 +98,17 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- Las paginas del frontend se empaquetan dentro del backend para que Spring Security
+                 pueda revisar la sesion antes de entregarlas -->
+            <resource>
+                <directory>../frontend/html</directory>
+                <targetPath>static</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

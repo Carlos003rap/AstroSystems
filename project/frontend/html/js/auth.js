@@ -29,6 +29,17 @@ class AuthService {
     logout() {
         localStorage.removeItem(this.tokenKey);
         localStorage.removeItem(this.userKey);
+
+        // Tambien se borra la cookie de sesion en el servidor (keepalive: se completa aunque cambie la pagina)
+        try {
+            if (typeof API_BASE_URL !== 'undefined') {
+                fetch(API_BASE_URL + '/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include',
+                    keepalive: true
+                }).catch(function () {});
+            }
+        } catch (e) {}
     }
 
     async login(username, password) {

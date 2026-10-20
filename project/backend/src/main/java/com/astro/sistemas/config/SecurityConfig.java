@@ -2,6 +2,7 @@ package com.astro.sistemas.config;
 
 import com.astro.sistemas.security.JwtAuthFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,6 +55,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -68,7 +70,34 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/api/health", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Paginas y archivos publicos
+                        .requestMatchers("/", "/index.html", "/login.html", "/forgot-password.html",
+                                "/reset-password.html", "/css/**", "/js/**", "/img/**",
+                                "/favicon.ico", "/error").permitAll()
+                        // Paginas internas segun el rol (mismas reglas que ya usa el frontend)
+                        .requestMatchers("/administracion-usuarios.html", "/administracion-grupos.html",
+                                "/consultas.html").hasAnyRole("ADMIN", "USER", "CONSULTOR")
+                        .requestMatchers("/editar-usuario.html", "/editar-grupo.html").hasRole("ADMIN")
+                        .requestMatchers("/auditoria.html").hasAnyRole("ADMIN", "AUDITOR")
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        // Sin sesion: la API sigue respondiendo 403; las paginas mandan al login
+                        .authenticationEntryPoint((request, response, e) -> {
+                            if (request.getRequestURI().startsWith("/api/")) {
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+                            } else {
+                                response.sendRedirect("/login.html?sesion=expirada");
+                            }
+                        })
+                        // Con sesion pero sin el rol: la API responde 403; las paginas mandan al panel
+                        .accessDeniedHandler((request, response, e) -> {
+                            if (request.getRequestURI().startsWith("/api/")) {
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+                            } else {
+                                response.sendRedirect("/dashboard.html");
+                            }
+                        })
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
