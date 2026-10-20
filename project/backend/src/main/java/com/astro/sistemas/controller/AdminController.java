@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
@@ -53,10 +54,9 @@ public class AdminController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizar(@PathVariable Long id,
-                                        @RequestBody Usuario usuario) {
+                                        @RequestBody Map<String, Object> cambios) {
         try {
-            usuario.setId(id);
-            return ResponseEntity.ok(usuarioService.actualizarUsuario(usuario));
+            return ResponseEntity.ok(usuarioService.actualizarUsuario(id, cambios));
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {

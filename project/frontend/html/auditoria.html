@@ -133,7 +133,7 @@ var DATA = { login: [], cambios: [] };
 var STATS = {
     login: function() {
         var ex     = DATA.login.filter(function(r){return r.resultado==='Exitoso';}).length;
-        var fa     = DATA.login.filter(function(r){return r.resultado==='Fallido';}).length;
+        var fa     = DATA.login.filter(function(r){return r.resultado==='Fallido' || r.resultado==='Bloqueado';}).length;
         var admins = [...new Set(DATA.login.map(function(r){return r.idAdmin;}))].length;
         return [
             {ico:'ti-login',       cls:'si-blue',  label:'Total accesos',  val:DATA.login.length},

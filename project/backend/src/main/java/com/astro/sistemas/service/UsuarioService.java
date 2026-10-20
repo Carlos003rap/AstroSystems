@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,6 +52,15 @@ public class UsuarioService {
         }
         validarEmail(usuario.getEmail());
 
+        // Un id enviado en el JSON haria que save() sobrescriba un usuario existente
+        usuario.setId(null);
+        if (usuario.getRol() == null) {
+            usuario.setRol(Usuario.Rol.USER);
+        }
+        if (usuario.getEstado() == null) {
+            usuario.setEstado(true);
+        }
+
         usuario.setUsername(usuario.getUsername().trim());
         usuario.setEmail(usuario.getEmail().trim());
 
@@ -90,12 +100,15 @@ public class UsuarioService {
                 .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
     }
 
-    public Usuario actualizarUsuario(Usuario usuario) {
-        Usuario existente = obtenerPorId(usuario.getId());
+    // Recibe un Map y no un Usuario: new Usuario() ya trae rol=USER y estado=true (@Builder.Default),
+    // asi que un campo omitido en el JSON no se podria distinguir de uno enviado
+    public Usuario actualizarUsuario(Long id, Map<String, Object> cambios) {
+        Usuario existente = obtenerPorId(id);
 
-        if (usuario.getEmail() != null) {
-            validarEmail(usuario.getEmail());
-            String nuevoEmail = usuario.getEmail().trim();
+        if (cambios.get("email") != null) {
+            String email = cambios.get("email").toString();
+            validarEmail(email);
+            String nuevoEmail = email.trim();
             if (!nuevoEmail.equalsIgnoreCase(existente.getEmail())
                     && usuarioRepository.existsByEmail(nuevoEmail)) {
                 throw new RuntimeException("El email ya está registrado");
@@ -103,12 +116,22 @@ public class UsuarioService {
             existente.setEmail(nuevoEmail);
         }
 
-        existente.setNombreCompleto(usuario.getNombreCompleto());
-        if (usuario.getEstado() != null) {
-            existente.setEstado(usuario.getEstado());
+        if (cambios.get("nombreCompleto") != null) {
+            existente.setNombreCompleto(cambios.get("nombreCompleto").toString().trim());
         }
-        if (usuario.getRol() != null) {
-            existente.setRol(usuario.getRol());
+        if (cambios.get("estado") != null) {
+            String estado = cambios.get("estado").toString().trim();
+            if (!estado.equalsIgnoreCase("true") && !estado.equalsIgnoreCase("false")) {
+                throw new IllegalArgumentException("El estado debe ser true o false");
+            }
+            existente.setEstado(Boolean.parseBoolean(estado));
+        }
+        if (cambios.get("rol") != null) {
+            try {
+                existente.setRol(Usuario.Rol.valueOf(cambios.get("rol").toString().trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("El rol no es válido");
+            }
         }
         return usuarioRepository.save(existente);
     }
@@ -164,6 +187,10 @@ public class UsuarioService {
     }
 
     public void restablecerPassword(String token, String nuevaPassword) {
+        if (nuevaPassword == null || nuevaPassword.isBlank()) {
+            throw new IllegalArgumentException("La nueva contraseña es obligatoria");
+        }
+
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
                 .orElseThrow(() -> new RuntimeException("El enlace no es válido"));
 

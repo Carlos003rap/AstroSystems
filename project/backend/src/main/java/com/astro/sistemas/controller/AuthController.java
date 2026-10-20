@@ -60,6 +60,8 @@ public class AuthController {
             Usuario usuario = usuarioOpt.get();
 
             if (estaBloqueado(usuario)) {
+                // Tambien se ejecuta BCrypt aqui para que el bloqueo no se note por el tiempo de respuesta
+                usuarioService.verificarPassword(password, hashFalso);
                 registrarLogin(usuario, "Bloqueado");
                 return respuestaError(HttpStatus.TOO_MANY_REQUESTS, MENSAJE_BLOQUEO);
             }
@@ -69,35 +71,35 @@ public class AuthController {
                 return respuestaError(HttpStatus.BAD_REQUEST, MENSAJE_CREDENCIALES);
             }
 
-            String token = jwtUtils.generateJwtToken(usuario.getUsername(), usuario.getRol().name());
+            // Un usuario desactivado no puede entrar; mismo mensaje para no revelar su estado
+            if (!Boolean.TRUE.equals(usuario.getEstado())) {
+                registrarLogin(usuario, "Fallido");
+                return respuestaError(HttpStatus.BAD_REQUEST, MENSAJE_CREDENCIALES);
+            }
 
-            registrarLogin(usuario, "Exitoso");
+            String rolNombre = (usuario.getRol() != null ? usuario.getRol() : Usuario.Rol.USER).name();
+            String token = jwtUtils.generateJwtToken(usuario.getUsername(), rolNombre);
+
+            // HashMap y no Map.of: Map.of lanza NullPointerException si nombreCompleto es null
+            Map<String, Object> userMap = new HashMap<>();
+            userMap.put("id",             usuario.getId());
+            userMap.put("username",       usuario.getUsername());
+            userMap.put("email",          usuario.getEmail());
+            userMap.put("nombreCompleto", usuario.getNombreCompleto() != null ? usuario.getNombreCompleto() : "");
+            userMap.put("role",           rolNombre);
+            userMap.put("permissions",    new String[]{ rolNombre });
 
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
-            response.put("user", Map.of(
-                "id",             usuario.getId(),
-                "username",       usuario.getUsername(),
-                "email",          usuario.getEmail(),
-                "nombreCompleto", usuario.getNombreCompleto(),
-                "role",           usuario.getRol().name(),
-                "permissions",    new String[]{ usuario.getRol().name() }
-            ));
+            response.put("user", userMap);
+
+            registrarLogin(usuario, "Exitoso");
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             System.out.println("Aviso: error inesperado en el login - " + e.getMessage());
             return respuestaError(HttpStatus.BAD_REQUEST, MENSAJE_CREDENCIALES);
-        }
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Usuario usuario) {
-        try {
-            return ResponseEntity.ok(usuarioService.crearUsuario(usuario));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
