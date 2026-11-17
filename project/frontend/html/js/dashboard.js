@@ -14,6 +14,11 @@ function setRoleBadge() {
     if (badge) {
         badge.textContent = authService.getUserRole() || '—';
     }
+    // Saludo con el nombre de la cuenta (solo interfaz)
+    var saludo = document.getElementById('dashGreeting');
+    var user = authService.getCurrentUser() || {};
+    var nombre = user.nombreCompleto || user.username || user.name || '';
+    if (saludo) saludo.textContent = nombre ? 'Hola, ' + nombre : 'Bienvenido';
 }
 
 // ── NUEVO: oculta las tarjetas que el rol actual no puede usar ──
@@ -38,31 +43,52 @@ function loadDashboardStats() {
     if (puedeVerUsuariosGrupos) {
         apiClient.getUsers(0, 1000)
             .then(function(r) { setStat('statUsuarios', (r.content || r || []).length); })
-            .catch(function() { setStat('statUsuarios', '—'); });
+            .catch(function() { setStat('statUsuarios', '—', 'error'); });
 
         apiClient.getGroups(0, 1000)
             .then(function(r) { setStat('statGrupos', (r.content || r || []).length); })
-            .catch(function() { setStat('statGrupos', '—'); });
+            .catch(function() { setStat('statGrupos', '—', 'error'); });
     } else {
-        setStat('statUsuarios', '—');
-        setStat('statGrupos', '—');
+        setStat('statUsuarios', '—', 'sin-acceso');
+        setStat('statGrupos', '—', 'sin-acceso');
     }
 
     if (puedeVerAuditoria) {
         apiClient.getLoginLogs(0, 1000)
             .then(function(r) { setStat('statAccesos', (r.content || r || []).length); })
-            .catch(function() { setStat('statAccesos', '—'); });
+            .catch(function() { setStat('statAccesos', '—', 'error'); });
 
         apiClient.getAuditLogs(0, 1000)
             .then(function(r) { setStat('statCambios', (r.content || r || []).length); })
-            .catch(function() { setStat('statCambios', '—'); });
+            .catch(function() { setStat('statCambios', '—', 'error'); });
     } else {
-        setStat('statAccesos', '—');
-        setStat('statCambios', '—');
+        setStat('statAccesos', '—', 'sin-acceso');
+        setStat('statCambios', '—', 'sin-acceso');
     }
 }
 
-function setStat(id, value) {
+// Pinta el valor: contador animado si es número, nota si no hay dato
+// estado: 'error' (falló la petición) o 'sin-acceso' (el rol no puede verlo)
+function setStat(id, value, estado) {
     var el = document.getElementById(id);
-    if (el) el.textContent = value;
+    if (!el) return;
+    var card = el.closest ? el.closest('.stat-card') : null;
+    if (card) {
+        card.classList.remove('is-loading');
+        card.classList.toggle('is-unavailable', !!estado);
+        var previa = card.querySelector('.stat-note');
+        if (previa) previa.parentNode.removeChild(previa);
+        if (estado) {
+            var nota = document.createElement('span');
+            nota.className = 'stat-note ' + (estado === 'error' ? 'is-error' : 'is-locked');
+            nota.innerHTML = '<i class="ti ' + (estado === 'error' ? 'ti-alert-circle' : 'ti-lock') + '" aria-hidden="true"></i>';
+            nota.appendChild(document.createTextNode(estado === 'error' ? 'No se pudo cargar' : 'Sin acceso con tu rol'));
+            card.appendChild(nota);
+        }
+    }
+    if (typeof value === 'number' && typeof UIService !== 'undefined' && UIService.countUp) {
+        UIService.countUp(el, value);
+    } else {
+        el.textContent = value;
+    }
 }

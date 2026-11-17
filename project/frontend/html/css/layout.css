@@ -24,9 +24,7 @@
     top: 0;
     z-index: 1000;
     overflow: hidden;
-    transition: width var(--dur-base) var(--ease-out),
-                transform var(--dur-slow) var(--ease-out),
-                visibility 0s;
+    transition: transform var(--dur-slow) var(--ease-out), visibility 0s;
 }
 
 .sidebar.collapsed,
@@ -45,7 +43,6 @@
     flex-direction: column;
     gap: 20px;
     min-height: 100vh;
-    transition: margin-left var(--dur-base) var(--ease-out);
 }
 
 .main-content.collapsed,
@@ -205,8 +202,6 @@
     font-weight: 500;
     text-align: left;
     cursor: pointer;
-    transition: background-color var(--dur-base) var(--ease-out),
-                color var(--dur-base) var(--ease-out);
     white-space: nowrap;
     overflow: hidden;
 }
@@ -289,9 +284,6 @@
     font-size: 13px;
     font-family: inherit;
     cursor: pointer;
-    transition: background-color var(--dur-base) var(--ease-out),
-                border-color var(--dur-base) var(--ease-out),
-                color var(--dur-base) var(--ease-out);
     white-space: nowrap;
     overflow: hidden;
 }
@@ -411,5 +403,110 @@ body.no-scroll {
 
     .menu-item {
         padding: 12px;
+    }
+}
+
+/* ── CABECERA DE PÁGINA (compartida) ──
+   .header (dashboard), .admin-header (listados) y .editor-header (edición) */
+.header,
+.admin-header,
+.editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    padding: 2px 0 18px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.editor-header {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
+
+.header-left,
+.admin-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.header-left > div,
+.admin-header-left > div,
+.editor-header > div {
+    min-width: 0;
+}
+
+.header h1,
+.admin-header h1,
+.editor-header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--green-900);
+}
+
+.header p,
+.admin-header p,
+.editor-header p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--color-text-light);
+}
+
+/* Línea pequeña sobre el título (saludo, sección) */
+.page-eyebrow {
+    display: block;
+    margin: 0 0 2px;
+    font-size: 12px !important;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--green-600) !important;
+}
+
+/* Insignia del rol en la cabecera */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--green-200);
+    border-radius: var(--radius-full);
+    background: var(--green-50);
+    color: var(--green-700);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .header h1,
+    .admin-header h1,
+    .editor-header h1 {
+        font-size: 20px;
+    }
+
+    .header p,
+    .admin-header p,
+    .editor-header p {
+        font-size: 13px;
+    }
+
+    .header,
+    .admin-header,
+    .editor-header {
+        padding-bottom: 14px;
     }
 }

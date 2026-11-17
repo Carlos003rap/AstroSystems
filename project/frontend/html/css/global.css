@@ -86,7 +86,8 @@
     --dur-fast: 120ms;
     --dur-base: 220ms;
     --dur-slow: 380ms;
-    --transition: all var(--dur-base) var(--ease-out);
+    /* Solo transform y opacity: los colores cambian sin animar */
+    --transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) ease;
 }
 
 html {
@@ -402,7 +403,6 @@ th, td {
 }
 
 tbody tr {
-    transition: background-color var(--dur-fast) ease;
 }
 
 tbody tr:hover {
