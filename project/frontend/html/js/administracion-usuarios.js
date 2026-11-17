@@ -35,8 +35,10 @@ function loadGroupsForSelect() {
 function loadUsers() {
     var loadingState = document.getElementById('loadingState');
     var noResults    = document.getElementById('noResults');
+    var errorState   = document.getElementById('usersError');
     if (loadingState) loadingState.style.display = 'block';
     if (noResults)    noResults.style.display    = 'none';
+    if (errorState)   errorState.hidden          = true;
 
     apiClient.getUsers(currentPage, pageSize).then(function(res) {
         var users = (res.content || res || []).map(function(u) {
@@ -53,6 +55,10 @@ function loadUsers() {
         if (loadingState) loadingState.style.display = 'none';
     }).catch(function() {
         if (loadingState) loadingState.style.display = 'none';
+        // Estado de error dentro de la tabla (no se queda en blanco)
+        var tbodyErr = document.getElementById('usersTableBody');
+        if (tbodyErr) tbodyErr.innerHTML = '';
+        if (errorState) errorState.hidden = false;
         UIService.showError('Error al cargar usuarios');
     });
 }
@@ -91,8 +97,8 @@ function renderUsers(users) {
             '<td><span class="status-badge ' + estadoClass + '">' + u.Estatus + '</span></td>' +
             '<td><div class="action-btns">' +
                 (puedeEditar
-                    ? '<a class="btn-action edit" href="editar-usuario.html?id=' + u.Id_usuario + '"><i class="ti ti-edit"></i>Editar</a>'
-                    : '<span class="text-muted">Solo lectura</span>') +
+                    ? '<a class="btn-action edit is-icon" href="editar-usuario.html?id=' + u.Id_usuario + '" title="Editar usuario ' + u.Id_usuario + '"><i class="ti ti-edit" aria-hidden="true"></i><span class="btn-label">Editar</span></a>'
+                    : '<span class="text-muted"><i class="ti ti-lock" aria-hidden="true"></i>Solo lectura</span>') +
             '</div></td>';
         tbody.appendChild(tr);
     });

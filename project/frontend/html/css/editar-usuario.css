@@ -1,349 +1,527 @@
 /* ============================================
-   ESTILOS - EDITAR USUARIO
+   ESTILOS - PANTALLAS DE EDICIÓN (usuario y grupo)
+   La cabecera vive en layout.css; botones y formularios en administracion.css
    ============================================ */
 
-/* Header con boton volver */
-.editor-header {
-    background: white;
-    border-radius: 13px;
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border: 1px solid #eaecef;
-}
-
-/* Toggle sidebar (igual que en otras paginas) */
-.editor-header .sidebar-toggle {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    border: 1.5px solid #eaecef;
-    background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--color-text-light);
-    font-size: 17px;
-    flex-shrink: 0;
-    transition: var(--transition);
-}
-
-.editor-header .sidebar-toggle:hover {
-    background: #f5f7fa;
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-}
-
+/* ── Botón volver (mismo aspecto que el botón de menú) ── */
 .back-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    border: 1.5px solid #eaecef;
-    background: white;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+    background: #fff;
     color: var(--color-text-light);
-    font-size: 17px;
-    flex-shrink: 0;
+    font-size: 18px;
+    cursor: pointer;
     transition: var(--transition);
 }
 
 .back-btn:hover {
-    background: #f5f7fa;
-    color: var(--color-primary);
-    border-color: var(--color-primary);
+    border-color: var(--green-200);
+    background: var(--green-50);
+    color: var(--green-700);
 }
 
-.editor-header h1 {
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--color-text);
-    margin: 0 0 2px;
+.back-btn:hover i {
+    transform: translateX(-2px);
+}
+
+.back-btn i {
+    transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.editor-header {
+    gap: 10px;
+}
+
+.editor-header > div {
+    margin-left: 4px;
 }
 
 .header-id {
-    color: var(--color-primary);
+    margin-left: 4px;
+    color: var(--green-600);
+    font-variant-numeric: tabular-nums;
 }
 
-.editor-header p {
-    font-size: 11px;
-    color: var(--color-text-light);
-    margin: 0;
-}
-
-/* Info rapida */
+/* ── Resumen rápido ── */
 .eu-info-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
 }
 
 .eu-info-card {
-    background: white;
-    border-radius: 12px;
-    padding: 14px 18px;
-    border: 1px solid #eaecef;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 6px;
+    min-width: 0;
+    padding: 16px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 1px 2px rgba(var(--ink-rgb), 0.04);
 }
 
-.eu-info-card span {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--color-text-light);
+.eu-info-card > span:first-child {
+    font-size: 11.5px;
+    font-weight: 650;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: var(--color-text-light);
 }
 
 .eu-info-card strong {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--color-text);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 22px;
+    font-weight: 750;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    color: var(--green-900);
 }
 
-/* Form card */
+/* Cargando: barra de esqueleto en lugar del dato */
+.eu-info-grid.is-loading .eu-info-card strong,
+.eu-info-grid.is-loading .eu-info-card .status-badge {
+    min-width: 90px;
+    border-radius: var(--radius-sm);
+    color: transparent;
+    background: var(--green-100);
+    animation: skeleton-pulse 1.2s var(--ease-in-out) infinite alternate;
+}
+
+.eu-info-grid.is-loading .status-badge::before {
+    visibility: hidden;
+}
+
+/* ── Tarjetas de formulario y accesos ── */
 .eu-form-card,
 .eu-access-card {
-    background: white;
-    border-radius: 13px;
-    padding: 22px;
-    border: 1px solid #eaecef;
+    padding: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 1px 2px rgba(var(--ink-rgb), 0.04);
+    overflow: hidden;
 }
 
 .eu-card-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--color-text);
-    margin: 0 0 18px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    margin: 0;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text);
 }
 
 .eu-card-title i {
-    font-size: 16px;
-    color: var(--color-primary);
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: var(--green-100);
+    color: var(--green-700);
+    font-size: 17px;
 }
 
 .eu-form-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    padding: 20px 22px 0;
+}
+
+.eu-form-row + .eu-form-row {
+    padding-top: 18px;
 }
 
 .eu-fg {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
+    min-width: 0;
 }
 
 .eu-fg label {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--color-text-light);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: var(--color-text);
 }
 
 .eu-fg input,
 .eu-fg select {
-    padding: 9px 12px;
-    border: 1.5px solid var(--color-border);
-    border-radius: 8px;
-    font-size: 13px;
-    color: var(--color-text);
-    background: #f8fafa;
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-btn);
+    background-color: #fff;
     font-family: inherit;
-    transition: var(--transition);
+    font-size: 14px;
+    color: var(--color-text);
+    text-overflow: ellipsis;
 }
 
-.eu-fg input:focus,
-.eu-fg select:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    background: white;
-    box-shadow: 0 0 0 3px rgba(47, 107, 85, 0.08);
+.eu-fg input:hover,
+.eu-fg select:hover {
+    border-color: var(--green-300);
 }
 
 .eu-fg input[readonly] {
-    background: #f0f2f5;
+    border-style: dashed;
+    border-color: var(--color-border);
+    background: #f5f7f6;
     color: var(--color-text-light);
+    font-variant-numeric: tabular-nums;
     cursor: not-allowed;
-    border-color: #eaecef;
 }
 
-/* Footer del form */
 .eu-form-footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    padding-top: 6px;
-}
-
-.btn-cancel {
-    padding: 10px 20px;
-    border: 1.5px solid var(--color-border);
-    border-radius: 8px;
-    background: white;
-    color: var(--color-text-light);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: var(--transition);
-}
-
-.btn-cancel:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-}
-
-.btn-save {
-    padding: 10px 22px;
-    background: var(--color-primary);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: var(--transition);
-}
-
-.btn-save:hover {
-    background: #256050;
+    margin-top: 22px;
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    background: #fcfdfc;
 }
 
 .btn-save i {
-    font-size: 15px;
+    font-size: 17px;
 }
 
-/* Accesos */
+.btn-save:disabled {
+    opacity: 0.75;
+    cursor: progress;
+    transform: none;
+}
+
+/* ── Accesos (puertas) ── */
 .eu-access-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 10px;
+    padding: 18px 22px 22px;
 }
 
 .eu-access-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 10px 13px;
-    border: 1.5px solid var(--color-border);
-    border-radius: 9px;
-    font-size: 12px;
+    gap: 10px;
+    min-width: 0;
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: #fff;
+    font-size: 13.5px;
     font-weight: 600;
-    color: var(--color-text-light);
-    background: #f8fafa;
-    cursor: default;
+    color: var(--color-text);
+    animation: fade-up var(--dur-base) var(--ease-out) backwards;
 }
 
-.eu-access-item.on {
-    border-color: var(--color-primary);
-    background: #eaf3ea;
-    color: var(--color-primary);
+.eu-access-item > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.eu-access-item > div span {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.eu-access-item small {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-light);
 }
 
 .eu-access-item i {
-    font-size: 15px;
+    flex-shrink: 0;
+    font-size: 18px;
+}
+
+.eu-access-item.active,
+.eu-access-item.on {
+    border-color: var(--green-200);
+    background: var(--green-50);
+    color: var(--green-900);
+}
+
+.eu-access-item.active > i:first-child {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: var(--green-100);
+    color: var(--green-700);
+}
+
+.eu-access-ok {
+    margin-left: auto;
+    color: var(--state-success-fg);
+}
+
+/* Esqueleto de una ficha de acceso */
+.eu-access-item.is-skeleton {
+    height: 56px;
+    border-color: transparent;
+    background: var(--green-100);
+    animation: skeleton-pulse 1.2s var(--ease-in-out) infinite alternate;
 }
 
 .eu-empty-access {
     grid-column: 1 / -1;
-    text-align: center;
-    padding: 30px;
-    color: #b0bac4;
-    font-size: 13px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    padding: 28px 16px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    text-align: center;
+    color: var(--color-text-light);
 }
 
 .eu-empty-access i {
-    font-size: 18px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .eu-info-grid { grid-template-columns: 1fr; }
-    .eu-form-row  { grid-template-columns: 1fr; }
-}
-
-/* ── Accesos del grupo en editar-usuario ── */
-.eu-access-item {
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border-radius: 9px;
-    border: 1.5px solid #e2e8f0;
-    background: #f8fafc;
-    font-size: 12px;
-    color: #374151;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--green-50);
+    color: var(--green-600);
+    font-size: 21px;
 }
 
-.eu-access-item.active {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-    color: #2f6b55;
+.eu-empty-access.is-error {
+    border-color: rgba(192, 57, 43, 0.3);
+    color: var(--state-danger-fg);
 }
 
-.eu-access-item small {
-    font-size: 10px;
-    color: #94a3b8;
+.eu-empty-access.is-error i {
+    background: var(--state-danger-bg);
+    color: var(--state-danger-fg);
 }
 
 /* ── Puertas en editar-grupo ── */
 .puerta-area-group {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .puerta-area-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-bottom: 8px;
+    font-size: 11.5px;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-light);
 }
 
 .puerta-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 9px 13px;
-    border-radius: 8px;
-    border: 1.5px solid #e2e8f0;
-    background: #f8fafc;
-    font-size: 12px;
-    color: #374151;
-    cursor: pointer;
+    gap: 10px;
+    min-height: 44px;
     margin-bottom: 6px;
-    transition: all 0.18s;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: #fff;
+    font-size: 13.5px;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: var(--transition);
 }
 
-.puerta-item input[type=checkbox] { accent-color: #2f6b55; }
+.puerta-item input[type=checkbox] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: var(--green-600);
+}
+
+.puerta-item:hover {
+    border-color: var(--green-300);
+    background: var(--green-50);
+}
 
 .puerta-item.active {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-    color: #2f6b55;
+    border-color: var(--green-200);
+    background: var(--green-50);
+    color: var(--green-900);
     font-weight: 600;
 }
 
-.puerta-item:hover { border-color: #2f6b55; }
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+    .eu-info-grid { gap: 12px; }
+}
+
+@media (max-width: 768px) {
+    .eu-info-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .eu-info-card:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .eu-form-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 16px 16px 0;
+    }
+
+    .eu-form-row + .eu-form-row {
+        padding-top: 16px;
+    }
+
+    .eu-card-title {
+        padding: 14px 16px;
+    }
+
+    .eu-fg input,
+    .eu-fg select {
+        font-size: 16px;
+    }
+
+    .eu-form-footer {
+        flex-direction: column-reverse;
+        padding: 14px 16px;
+    }
+
+    .eu-form-footer button {
+        width: 100%;
+    }
+
+    .eu-access-grid {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+
+    .eu-info-card strong {
+        font-size: 19px;
+    }
+}
+
+@media (max-width: 480px) {
+    .editor-header h1 {
+        font-size: 18px;
+    }
+}
+
+@media (pointer: coarse) {
+    .back-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    .eu-fg input,
+    .eu-fg select {
+        height: 46px;
+    }
+}
+
+/* ── Editar grupo: ayuda, puertas por área y tabla de usuarios ── */
+.eu-card-help {
+    margin: 0;
+    padding: 14px 22px 0;
+    font-size: 13.5px;
+    color: var(--color-text-light);
+}
+
+#puertasContainer {
+    padding: 16px 22px 22px;
+}
+
+.puerta-area-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.puerta-area-group:last-child {
+    margin-bottom: 0;
+}
+
+.puerta-area-title {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+}
+
+.puerta-area-group .puerta-item {
+    margin-bottom: 0;
+}
+
+.puerta-item i {
+    font-size: 18px;
+    color: var(--color-text-light);
+}
+
+.puerta-item.active i {
+    color: var(--green-700);
+}
+
+.puerta-item span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.puerta-item:has(input:focus-visible) {
+    outline: 2px solid var(--green-600);
+    outline-offset: 2px;
+}
+
+.eg-users table {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .eu-card-help {
+        padding: 12px 16px 0;
+    }
+
+    #puertasContainer {
+        padding: 14px 16px 16px;
+    }
+
+    .puerta-area-group {
+        grid-template-columns: 1fr;
+    }
+
+    /* Celda vacía de relleno del formulario */
+    .eu-fg:empty {
+        display: none;
+    }
+
+    .eg-users:has(tbody tr) {
+        background: var(--green-50);
+    }
+}

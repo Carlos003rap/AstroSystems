@@ -102,36 +102,130 @@ class NavbarService {
         });
     }
 
+    static isMobile() {
+        return window.matchMedia('(max-width: 900px)').matches;
+    }
+
     static initToggle() {
         const toggleBtn = document.getElementById('sidebarToggle');
         const sidebar   = document.getElementById('sidebar');
         const main = document.getElementById('mainContent') || document.getElementById('adminMain');
+        if (!sidebar) return;
 
-        if (toggleBtn && sidebar) {
+        // Fondo oscuro que cierra el menú al tocarlo (solo se ve en celular y tablet)
+        let overlay = document.getElementById('sidebarOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'sidebarOverlay';
+            overlay.className = 'sidebar-overlay';
+            document.body.appendChild(overlay);
+        }
+        overlay.addEventListener('click', function () { NavbarService.closeDrawer(true); });
+
+        if (toggleBtn) {
+            toggleBtn.setAttribute('aria-label', 'Abrir o cerrar el menú');
+            toggleBtn.setAttribute('aria-controls', 'sidebar');
+            toggleBtn.setAttribute('aria-expanded', NavbarService.isMobile() ? 'false' : 'true');
             toggleBtn.addEventListener('click', function () {
+                if (NavbarService.isMobile()) {
+                    NavbarService.toggleDrawer();
+                    return;
+                }
                 sidebar.classList.toggle('collapsed');
                 if (main) main.classList.toggle('collapsed');
+                toggleBtn.setAttribute('aria-expanded', sidebar.classList.contains('collapsed') ? 'false' : 'true');
             });
         }
+
+        // Esc cierra el menú deslizable (si otra ventana ya usó Esc, no se hace nada)
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !e.defaultPrevented && sidebar.classList.contains('is-open')) {
+                NavbarService.closeDrawer(true);
+            }
+        });
+
+        // Al cambiar entre celular y escritorio se reinicia el estado del menú
+        const mq = window.matchMedia('(max-width: 900px)');
+        const alCambiar = function () {
+            NavbarService.closeDrawer(false);
+            if (mq.matches) {
+                sidebar.classList.remove('collapsed');
+                if (main) main.classList.remove('collapsed');
+            }
+            if (toggleBtn) {
+                toggleBtn.setAttribute('aria-expanded', mq.matches ? 'false' : 'true');
+            }
+        };
+        if (mq.addEventListener) mq.addEventListener('change', alCambiar);
+        else if (mq.addListener) mq.addListener(alCambiar);
+    }
+
+    static toggleDrawer() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('is-open')) {
+            NavbarService.closeDrawer(true);
+        } else {
+            NavbarService.openDrawer();
+        }
+    }
+
+    static openDrawer() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const toggleBtn = document.getElementById('sidebarToggle');
+        if (!sidebar) return;
+        sidebar.classList.add('is-open');
+        if (overlay) overlay.classList.add('is-visible');
+        document.body.classList.add('no-scroll');
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+        const primero = sidebar.querySelector('.menu-item.active') || sidebar.querySelector('.menu-item');
+        if (primero) primero.focus({ preventScroll: true });
+    }
+
+    static closeDrawer(devolverFoco) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const toggleBtn = document.getElementById('sidebarToggle');
+        if (!sidebar) return;
+        const estabaAbierto = sidebar.classList.contains('is-open');
+        sidebar.classList.remove('is-open');
+        if (overlay) overlay.classList.remove('is-visible');
+        document.body.classList.remove('no-scroll');
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+        if (estabaAbierto && devolverFoco && toggleBtn) toggleBtn.focus({ preventScroll: true });
     }
 }
 
 function requireRole(rolesPermitidos) {
     const rol = authService.getUserRole();
     if (!rolesPermitidos.includes(rol)) {
-        alert('No tienes permiso para acceder a esta sección.');
-        window.location.href = 'dashboard.html';
+        if (typeof UIService !== 'undefined') {
+            UIService.showToast('No tienes permiso para acceder a esta sección.', 'warning');
+            setTimeout(function () { window.location.href = 'dashboard.html'; }, 1200);
+        } else {
+            alert('No tienes permiso para acceder a esta sección.');
+            window.location.href = 'dashboard.html';
+        }
         return false;
     }
     return true;
 }
 
 function navigateTo(page) {
+    NavbarService.closeDrawer(false);
     window.location.href = page;
 }
 
-function handleLogout() {
-    if (confirm('¿Está seguro que desea cerrar sesión?')) {
+async function handleLogout() {
+    const confirmado = typeof UIService !== 'undefined'
+        ? await UIService.confirmDialog({
+            title: 'Cerrar sesión',
+            message: '¿Está seguro que desea cerrar sesión?',
+            confirmText: 'Cerrar sesión',
+            cancelText: 'Cancelar'
+        })
+        : confirm('¿Está seguro que desea cerrar sesión?');
+    if (confirmado) {
         authService.logout();
         window.location.replace('login.html');
     }
@@ -139,7 +233,11 @@ function handleLogout() {
 
 function exportTable(tableId, format = 'csv') {
     const table = document.getElementById(tableId) || document.querySelector('table');
-    if (!table) { alert('No se encontró una tabla para exportar.'); return; }
+    if (!table) {
+        if (typeof UIService !== 'undefined') UIService.showToast('No se encontró una tabla para exportar.', 'warning');
+        else alert('No se encontró una tabla para exportar.');
+        return;
+    }
 
     const headers = Array.from(table.querySelectorAll('thead th'))
         .map(th => th.innerText.trim());
@@ -161,6 +259,7 @@ function exportTable(tableId, format = 'csv') {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    if (typeof UIService !== 'undefined') UIService.showToast('Archivo ' + filename + ' generado', 'success');
 }
 
 // Al volver con el boton "atras" despues de cerrar sesion, el navegador puede
@@ -170,6 +269,7 @@ window.addEventListener('pageshow', (event) => {
     const esPublica = ['login.html', 'index.html', 'forgot-password.html', 'reset-password.html']
         .some(nombre => paginaActual.includes(nombre));
     if (!esPublica && event.persisted) {
+        NavbarService.closeDrawer(false);
         authService.checkAuth();
     }
 });
@@ -181,5 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (document.getElementById('sidebarRoot')) {
         NavbarService.injectSidebar();
+    }
+    if (typeof UIService !== 'undefined') {
+        UIService.enableResponsiveTables();
     }
 });

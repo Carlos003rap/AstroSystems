@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultas - ASTRO SISTEMAS</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/vendor/inter/inter.css">
+    <link rel="stylesheet" href="css/vendor/tabler/tabler-icons.min.css">
     <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/administracion.css">
     <link rel="stylesheet" href="css/consultas.css">
 </head>
@@ -19,28 +21,28 @@
         <div class="admin-header">
             <div class="admin-header-left">
                 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
-                    <i class="ti ti-menu-2"></i>
+                    <i class="ti ti-menu-2" aria-hidden="true"></i>
                 </button>
                 <div>
                     <h1>Consultas</h1>
-                    <p>Explora usuarios, grupos, puertas y areas — selecciona un registro para ver su detalle</p>
+                    <p>Explora usuarios, grupos, puertas y áreas — selecciona un registro para ver su detalle</p>
                 </div>
             </div>
         </div>
 
         <!-- Tabs de navegacion -->
-        <div class="tabs-nav">
-            <button class="cons-tab active" onclick="setTab('usuarios',this)">
-                <i class="ti ti-users"></i>Usuarios
+        <div class="tabs-nav" role="tablist" aria-label="Tipo de consulta">
+            <button class="cons-tab active" role="tab" aria-selected="true" onclick="setTab('usuarios',this)">
+                <i class="ti ti-users" aria-hidden="true"></i>Usuarios
             </button>
-            <button class="cons-tab" onclick="setTab('grupos',this)">
-                <i class="ti ti-users-group"></i>Grupos
+            <button class="cons-tab" role="tab" aria-selected="false" onclick="setTab('grupos',this)">
+                <i class="ti ti-users-group" aria-hidden="true"></i>Grupos
             </button>
-            <button class="cons-tab" data-roles="ADMIN,CONSULTOR" onclick="setTab('puertas',this)">
-                <i class="ti ti-door"></i>Puertas
+            <button class="cons-tab" role="tab" aria-selected="false" data-roles="ADMIN,CONSULTOR" onclick="setTab('puertas',this)">
+                <i class="ti ti-door" aria-hidden="true"></i>Puertas
             </button>
-            <button class="cons-tab" data-roles="ADMIN,CONSULTOR" onclick="setTab('areas',this)">
-                <i class="ti ti-building"></i>Areas
+            <button class="cons-tab" role="tab" aria-selected="false" data-roles="ADMIN,CONSULTOR" onclick="setTab('areas',this)">
+                <i class="ti ti-building" aria-hidden="true"></i>Áreas
             </button>
         </div>
 
@@ -51,12 +53,12 @@
             <div class="cons-list-card">
                 <div class="cons-list-hd">
                     <h3 id="listTitle">Usuarios registrados</h3>
-                    <span class="cons-list-count" id="listCount">0</span>
+                    <span class="cons-list-count" id="listCount" aria-live="polite">0</span>
                 </div>
                 <div class="cons-search">
                     <div class="cons-search-inner">
-                        <i class="ti ti-search"></i>
-                        <input type="text" id="searchInput" placeholder="Buscar por cédula..." oninput="filterList()" autocomplete="off">
+                        <i class="ti ti-search" aria-hidden="true"></i>
+                        <input type="text" id="searchInput" aria-label="Buscar" placeholder="Buscar por cédula..." oninput="filterList()" autocomplete="off">
                     </div>
                     <select id="filterEstatus" onchange="filterList()" aria-label="Filtrar por estatus" title="Filtrar por estatus">
                         <option value="">Todos</option>
@@ -64,17 +66,18 @@
                         <option value="Inactivo">Inactivo</option>
                     </select>
                 </div>
-                <div class="cons-list-items" id="listItems">
-                    <div class="cons-empty">
-                        <i class="ti ti-loader-2"></i>Cargando...
-                    </div>
+                <div class="cons-list-items" id="listItems" aria-busy="true">
+                    <div class="cons-list-item is-skeleton"><div class="cons-li-ico"></div><div class="cons-li-info"></div></div>
+                    <div class="cons-list-item is-skeleton"><div class="cons-li-ico"></div><div class="cons-li-info"></div></div>
+                    <div class="cons-list-item is-skeleton"><div class="cons-li-ico"></div><div class="cons-li-info"></div></div>
+                    <span class="sr-only">Cargando...</span>
                 </div>
             </div>
 
             <!-- Panel detalle derecha -->
-            <div class="cons-detail-card" id="detailCard">
+            <div class="cons-detail-card" id="detailCard" aria-live="polite">
                 <div class="cons-placeholder" id="detailEmpty">
-                    <i class="ti ti-hand-click"></i>
+                    <i class="ti ti-hand-click" aria-hidden="true"></i>
                     <h3>Selecciona un registro</h3>
                     <p>Haz clic en cualquier elemento de la lista para ver su información completa</p>
                 </div>
@@ -118,6 +121,7 @@ function setTab(tab, btn) {
     currentTab = tab; selectedId = null;
     document.querySelectorAll('.cons-tab').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
+    document.querySelectorAll('.cons-tab').forEach(function(b){ b.setAttribute('aria-selected', b.classList.contains('active') ? 'true' : 'false'); });
     document.getElementById('searchInput').value = '';
     document.getElementById('filterEstatus').value = '';
     document.getElementById('filterEstatus').style.display = (tab==='usuarios'||tab==='grupos') ? '' : 'none';
@@ -156,8 +160,19 @@ function renderList() {
     var el = document.getElementById('listItems');
     el.innerHTML = '';
 
+    el.removeAttribute('aria-busy');
     if (!filtered.length) {
-        el.innerHTML = '<div class="cons-empty"><i class="ti ti-search-off"></i>Sin resultados</div>';
+        var estado = (typeof CARGA !== 'undefined' && !data.length) ? CARGA[currentTab] : 'listo';
+        if (estado === 'cargando') {
+            el.setAttribute('aria-busy', 'true');
+            el.innerHTML = new Array(4).join('<div class="cons-list-item is-skeleton"><div class="cons-li-ico"></div><div class="cons-li-info"></div></div>') +
+                '<span class="sr-only">Cargando...</span>';
+        } else if (estado === 'error') {
+            el.innerHTML = '<div class="cons-empty is-error" role="alert"><i class="ti ti-cloud-off" aria-hidden="true"></i>No se pudieron cargar los datos' +
+                '<button type="button" class="btn-secondary" onclick="reintentarConsulta()"><i class="ti ti-refresh" aria-hidden="true"></i> Reintentar</button></div>';
+        } else {
+            el.innerHTML = '<div class="cons-empty"><i class="ti ti-search-off" aria-hidden="true"></i>Sin resultados</div>';
+        }
         return;
     }
 
@@ -169,7 +184,7 @@ function renderList() {
         if (currentTab === 'usuarios') {
             var cls = r.estatus==='Activo' ? 'clb-green' : 'clb-red';
             div.innerHTML =
-                '<div class="cons-li-ico ico-green"><i class="ti ti-id-badge"></i></div>' +
+                '<div class="cons-li-ico ico-green"><i class="ti ti-id-badge" aria-hidden="true"></i></div>' +
                 '<div class="cons-li-info"><strong>' + r.cedula + '</strong><span>ID #' + String(r.id).padStart(3,'0') + ' · Grupo ' + r.grupo + '</span></div>' +
                 '<span class="cons-li-badge ' + cls + '">' + r.estatus + '</span>';
 
@@ -178,21 +193,21 @@ function renderList() {
             var p = DB.accesos.filter(function(x){return x.idGrupo===r.id;}).length;
             var cls = r.estatus==='Activo' ? 'clb-green' : 'clb-red';
             div.innerHTML =
-                '<div class="cons-li-ico ico-blue"><i class="ti ti-users-group"></i></div>' +
+                '<div class="cons-li-ico ico-blue"><i class="ti ti-users-group" aria-hidden="true"></i></div>' +
                 '<div class="cons-li-info"><strong>' + r.codigo + ' — ' + r.nombre + '</strong><span>' + u + ' usuarios · ' + p + ' puertas</span></div>' +
                 '<span class="cons-li-badge ' + cls + '">' + r.estatus + '</span>';
 
         } else if (currentTab === 'puertas') {
             var gc = DB.accesos.filter(function(x){return x.idPuerta===r.id;}).length;
             div.innerHTML =
-                '<div class="cons-li-ico ico-amber"><i class="ti ti-door"></i></div>' +
+                '<div class="cons-li-ico ico-amber"><i class="ti ti-door" aria-hidden="true"></i></div>' +
                 '<div class="cons-li-info"><strong>' + r.nombre + '</strong><span>' + r.area + ' · ' + gc + ' grupos con acceso</span></div>' +
                 '<span class="cons-li-badge clb-blue">' + gc + ' grupos</span>';
 
         } else {
             var pc = DB.puertas.filter(function(x){return x.idArea===r.id;}).length;
             div.innerHTML =
-                '<div class="cons-li-ico ico-purple"><i class="ti ti-building"></i></div>' +
+                '<div class="cons-li-ico ico-purple"><i class="ti ti-building" aria-hidden="true"></i></div>' +
                 '<div class="cons-li-info"><strong>' + r.nombre + '</strong><span>' + pc + ' puertas</span></div>' +
                 '<span class="cons-li-badge clb-gray">' + pc + ' puertas</span>';
         }
@@ -207,6 +222,10 @@ function selectItem(id, el) {
     document.querySelectorAll('.cons-list-item').forEach(function(i){ i.classList.remove('selected'); });
     el.classList.add('selected');
     showDetail(id);
+    if (window.matchMedia('(max-width: 1100px)').matches) {
+        var reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        document.getElementById('detailCard').scrollIntoView({ behavior: reducir ? 'auto' : 'smooth', block: 'start' });
+    }
 }
 
 function showDetail(id) {
@@ -233,13 +252,13 @@ function showDetail(id) {
                 '<div class="cons-dstat"><div class="cons-dstat-label">Estatus</div><div class="cons-dstat-val sm ' + (u.estatus==='Activo'?'green':'red') + '">' + u.estatus + '</div></div>' +
             '</div>' +
             '<div class="cons-detail-section">' +
-                '<div class="cons-sec-title"><i class="ti ti-users-group"></i><span>Grupo asignado</span></div>' +
-                '<div class="cons-chip-row"><span class="cons-chip blue"><i class="ti ti-users-group"></i>' + g.codigo + ' — ' + g.nombre + '</span></div>' +
+                '<div class="cons-sec-title"><i class="ti ti-users-group" aria-hidden="true"></i><span>Grupo asignado</span></div>' +
+                '<div class="cons-chip-row"><span class="cons-chip blue"><i class="ti ti-users-group" aria-hidden="true"></i>' + g.codigo + ' — ' + g.nombre + '</span></div>' +
             '</div>' +
             '<div class="cons-detail-section">' +
-                '<div class="cons-sec-title"><i class="ti ti-door"></i><span>Puertas con acceso (via ' + g.codigo + ')</span></div>' +
+                '<div class="cons-sec-title"><i class="ti ti-door" aria-hidden="true"></i><span>Puertas con acceso (vía ' + g.codigo + ')</span></div>' +
                 '<div class="cons-chip-row">' + (puertas.length
-                    ? puertas.map(function(p){ return '<span class="cons-chip green"><i class="ti ti-door"></i>' + p.nombre + '<span class="cons-chip-area">' + p.area + '</span></span>'; }).join('')
+                    ? puertas.map(function(p){ return '<span class="cons-chip green"><i class="ti ti-door" aria-hidden="true"></i>' + p.nombre + '<span class="cons-chip-area">' + p.area + '</span></span>'; }).join('')
                     : '<span class="cons-no-data">Sin accesos registrados</span>') + '</div>' +
             '</div>';
 
@@ -262,18 +281,18 @@ function showDetail(id) {
                 '<div class="cons-dstat"><div class="cons-dstat-label">Puertas</div><div class="cons-dstat-val">' + puertas.length + '</div></div>' +
             '</div>' +
             '<div class="cons-detail-section">' +
-                '<div class="cons-sec-title"><i class="ti ti-door"></i><span>Puertas habilitadas para este grupo</span></div>' +
+                '<div class="cons-sec-title"><i class="ti ti-door" aria-hidden="true"></i><span>Puertas habilitadas para este grupo</span></div>' +
                 '<div class="cons-chip-row">' + (puertas.length
-                    ? puertas.map(function(p){ return '<span class="cons-chip green"><i class="ti ti-door"></i>' + p.nombre + '<span class="cons-chip-area">' + p.area + '</span></span>'; }).join('')
+                    ? puertas.map(function(p){ return '<span class="cons-chip green"><i class="ti ti-door" aria-hidden="true"></i>' + p.nombre + '<span class="cons-chip-area">' + p.area + '</span></span>'; }).join('')
                     : '<span class="cons-no-data">Sin accesos</span>') + '</div>' +
             '</div>' +
             '<div class="cons-detail-section">' +
-                '<div class="cons-sec-title"><i class="ti ti-users"></i><span>Usuarios del grupo</span></div>' +
+                '<div class="cons-sec-title"><i class="ti ti-users" aria-hidden="true"></i><span>Usuarios del grupo</span></div>' +
                 '<table class="cons-mini-table"><thead><tr><th>ID</th><th>Cédula</th><th>Estatus</th></tr></thead><tbody>' +
                 (usuarios.length
                     ? usuarios.map(function(u){ return '<tr><td>#' + String(u.id).padStart(3,'0') + '</td><td><strong>' + u.cedula + '</strong></td>' +
                         '<td><span class="cons-pill ' + (u.estatus==='Activo'?'on':'off') + '">' + u.estatus + '</span></td></tr>'; }).join('')
-                    : '<tr><td colspan="3" style="text-align:center;padding:20px;color:#94a3b8">Sin usuarios</td></tr>') +
+                    : '<tr><td colspan="3" class="cons-no-data" style="text-align:center">Sin usuarios</td></tr>') +
                 '</tbody></table>' +
             '</div>';
 
@@ -295,15 +314,15 @@ function showDetail(id) {
                 '<div class="cons-dstat"><div class="cons-dstat-label">Otras puertas</div><div class="cons-dstat-val">' + otras.length + '</div></div>' +
             '</div>' +
             '<div class="cons-detail-section">' +
-                '<div class="cons-sec-title"><i class="ti ti-users-group"></i><span>Grupos con acceso autorizado</span></div>' +
+                '<div class="cons-sec-title"><i class="ti ti-users-group" aria-hidden="true"></i><span>Grupos con acceso autorizado</span></div>' +
                 '<div class="cons-chip-row">' + (grupos.length
-                    ? grupos.map(function(g){ return '<span class="cons-chip blue"><i class="ti ti-users-group"></i>' + g.codigo + ' — ' + g.nombre + '</span>'; }).join('')
+                    ? grupos.map(function(g){ return '<span class="cons-chip blue"><i class="ti ti-users-group" aria-hidden="true"></i>' + g.codigo + ' — ' + g.nombre + '</span>'; }).join('')
                     : '<span class="cons-no-data">Ningún grupo autorizado</span>') + '</div>' +
             '</div>' +
             '<div class="cons-detail-section">' +
-                '<div class="cons-sec-title"><i class="ti ti-door"></i><span>Otras puertas en ' + a.nombre + '</span></div>' +
+                '<div class="cons-sec-title"><i class="ti ti-door" aria-hidden="true"></i><span>Otras puertas en ' + a.nombre + '</span></div>' +
                 '<div class="cons-chip-row">' + (otras.length
-                    ? otras.map(function(pp){ return '<span class="cons-chip amber"><i class="ti ti-door"></i>' + pp.nombre + '</span>'; }).join('')
+                    ? otras.map(function(pp){ return '<span class="cons-chip amber"><i class="ti ti-door" aria-hidden="true"></i>' + pp.nombre + '</span>'; }).join('')
                     : '<span class="cons-no-data">Ninguna</span>') + '</div>' +
             '</div>';
 
@@ -327,7 +346,7 @@ function showDetail(id) {
                 '<div class="cons-dstat"><div class="cons-dstat-label">Total accesos</div><div class="cons-dstat-val">' + acc.length + '</div></div>' +
             '</div>' +
             '<div class="cons-detail-section">' +
-                '<div class="cons-sec-title"><i class="ti ti-door"></i><span>Puertas en esta área</span></div>' +
+                '<div class="cons-sec-title"><i class="ti ti-door" aria-hidden="true"></i><span>Puertas en esta área</span></div>' +
                 '<table class="cons-mini-table"><thead><tr><th>Puerta</th><th>Grupos con acceso</th></tr></thead><tbody>' +
                 puertas.map(function(p){
                     var gc = DB.accesos.filter(function(ac){return ac.idPuerta===p.id;}).length;
@@ -336,9 +355,9 @@ function showDetail(id) {
                 '</tbody></table>' +
             '</div>' +
             '<div class="cons-detail-section">' +
-                '<div class="cons-sec-title"><i class="ti ti-users-group"></i><span>Grupos con acceso al área</span></div>' +
+                '<div class="cons-sec-title"><i class="ti ti-users-group" aria-hidden="true"></i><span>Grupos con acceso al área</span></div>' +
                 '<div class="cons-chip-row">' + (grupos.length
-                    ? grupos.map(function(g){ return '<span class="cons-chip blue"><i class="ti ti-users-group"></i>' + g.codigo + ' — ' + g.nombre + '</span>'; }).join('')
+                    ? grupos.map(function(g){ return '<span class="cons-chip blue"><i class="ti ti-users-group" aria-hidden="true"></i>' + g.codigo + ' — ' + g.nombre + '</span>'; }).join('')
                     : '<span class="cons-no-data">Ningún grupo</span>') + '</div>' +
             '</div>';
     }

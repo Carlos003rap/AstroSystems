@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Grupo - ASTRO SISTEMAS</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="css/vendor/inter/inter.css">
+    <link rel="stylesheet" href="css/vendor/tabler/tabler-icons.min.css">
     <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/administracion.css">
     <link rel="stylesheet" href="css/editar-usuario.css">
 </head>
@@ -19,10 +21,10 @@
         <!-- Header -->
         <div class="editor-header">
             <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
-                <i class="ti ti-menu-2"></i>
+                <i class="ti ti-menu-2" aria-hidden="true"></i>
             </button>
-            <button class="back-btn" onclick="navigateTo('administracion-grupos.html')" title="Volver">
-                <i class="ti ti-arrow-left"></i>
+            <button class="back-btn" onclick="navigateTo('administracion-grupos.html')" title="Volver" aria-label="Volver a grupos">
+                <i class="ti ti-arrow-left" aria-hidden="true"></i>
             </button>
             <div>
                 <h1>Editar Grupo <span id="headerGrupoId" class="header-id"></span></h1>
@@ -31,7 +33,7 @@
         </div>
 
         <!-- Info rapida -->
-        <div class="eu-info-grid">
+        <div class="eu-info-grid is-loading" id="euInfoGrid" aria-busy="true">
             <div class="eu-info-card">
                 <span>ID Grupo</span>
                 <strong id="infoId">—</strong>
@@ -49,7 +51,7 @@
         <!-- Formulario -->
         <div class="eu-form-card">
             <p class="eu-card-title">
-                <i class="ti ti-users-group"></i>Datos del Grupo
+                <i class="ti ti-users-group" aria-hidden="true"></i>Datos del Grupo
             </p>
             <div class="eu-form-row">
                 <div class="eu-fg">
@@ -77,8 +79,8 @@
                 <button type="button" class="btn-cancel" onclick="navigateTo('administracion-grupos.html')">
                     Cancelar
                 </button>
-                <button type="button" class="btn-save" onclick="saveGroup()">
-                    <i class="ti ti-device-floppy"></i>Guardar cambios
+                <button type="button" class="btn-save" id="saveGroupBtn" onclick="saveGroup()">
+                    <i class="ti ti-device-floppy" aria-hidden="true"></i>Guardar cambios
                 </button>
             </div>
         </div>
@@ -86,14 +88,17 @@
         <!-- Accesos del grupo -->
         <div class="eu-access-card">
             <p class="eu-card-title">
-                <i class="ti ti-door"></i>Accesos a Puertas
+                <i class="ti ti-door" aria-hidden="true"></i>Accesos a Puertas
             </p>
-            <p style="font-size:12px;color:#64748b;margin-bottom:14px">
+            <p class="eu-card-help">
                 Marca las puertas a las que este grupo tiene acceso.
             </p>
-            <div id="puertasContainer">
-                <div class="eu-empty-access">
-                    <i class="ti ti-loader-2"></i> Cargando puertas...
+            <div id="puertasContainer" aria-live="polite">
+                <div class="puerta-area-group">
+                    <div class="eu-access-item is-skeleton"></div>
+                    <div class="eu-access-item is-skeleton"></div>
+                    <div class="eu-access-item is-skeleton"></div>
+                    <span class="sr-only">Cargando puertas...</span>
                 </div>
             </div>
         </div>
@@ -101,10 +106,10 @@
         <!-- Usuarios del grupo -->
         <div class="eu-form-card">
             <p class="eu-card-title">
-                <i class="ti ti-users"></i>Usuarios en este Grupo
+                <i class="ti ti-users" aria-hidden="true"></i>Usuarios en este Grupo
             </p>
-            <div class="table-wrapper">
-                <table>
+            <div class="table-wrapper eg-users">
+                <table id="groupUsersTable">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -115,7 +120,7 @@
                     <tbody id="groupUsersBody"></tbody>
                 </table>
                 <div class="no-results" id="noUsers" style="display:none">
-                    <i class="ti ti-user-off"></i>
+                    <i class="ti ti-user-off" aria-hidden="true"></i>
                     No hay usuarios en este grupo
                 </div>
             </div>
@@ -132,10 +137,14 @@
 window.addEventListener('load', function() {
     var params = new URLSearchParams(window.location.search);
     var id = params.get('id');
-    if (!id) return;
+    if (!id) { terminarCargaInfo(); return; }
+
+    // Filas de esqueleto mientras llegan los usuarios del grupo
+    UIService.renderSkeletonRows(document.getElementById('groupUsersBody'), 3, 3);
 
     // 1. Cargar datos del grupo
     apiClient.getGroupById(id).then(function(g) {
+        terminarCargaInfo();
         document.getElementById('headerGrupoId').textContent = '#' + g.idGrupo;
         document.getElementById('infoId').textContent        = '#' + g.idGrupo;
         document.getElementById('infoCodigo').textContent    = g.codigo || '—';
@@ -144,6 +153,7 @@ window.addEventListener('load', function() {
         document.getElementById('groupEstatus').value        = g.estatus || 'Activo';
     }).catch(function(e) {
         console.error(e);
+        terminarCargaInfo();
         UIService.showError('Error al cargar grupo');
     });
 
@@ -168,7 +178,13 @@ window.addEventListener('load', function() {
                 '<td><span class="status-badge ' + cls + '">' + u.estatus + '</span></td>';
             tbody.appendChild(tr);
         });
-    }).catch(function(e) { console.error(e); });
+    }).catch(function(e) {
+        console.error(e);
+        // La tabla no se queda en blanco ni con el esqueleto
+        UIService.renderEmptyState(document.getElementById('groupUsersBody'), {
+            icon: 'ti-cloud-off', title: 'No se pudieron cargar los usuarios', error: true
+        });
+    });
 
     // 3. Cargar puertas y marcar las que ya tiene el grupo
     Promise.all([
@@ -195,7 +211,7 @@ window.addEventListener('load', function() {
         Object.keys(areas).forEach(function(areaNombre) {
             var areaDiv = document.createElement('div');
             areaDiv.className = 'puerta-area-group';
-            areaDiv.innerHTML = '<div class="puerta-area-title"><i class="ti ti-building"></i>' + areaNombre + '</div>';
+            areaDiv.innerHTML = '<div class="puerta-area-title"><i class="ti ti-building" aria-hidden="true"></i>' + areaNombre + '</div>';
 
             areas[areaNombre].forEach(function(p) {
                 var activo = idsPuertas.indexOf(p.idPuerta) !== -1;
@@ -204,7 +220,7 @@ window.addEventListener('load', function() {
                 // ← CAMBIO: agrega data-original para saber el estado inicial
                 label.innerHTML =
                     '<input type="checkbox" value="' + p.idPuerta + '" data-original="' + activo + '"' + (activo ? ' checked' : '') + '>' +
-                    '<i class="ti ti-door"></i>' +
+                    '<i class="ti ti-door" aria-hidden="true"></i>' +
                     '<span>' + p.nombrePuerta + '</span>';
                 label.querySelector('input').addEventListener('change', function() {
                     label.classList.toggle('active', this.checked);
@@ -216,11 +232,27 @@ window.addEventListener('load', function() {
     }).catch(function(e) {
         console.error(e);
         document.getElementById('puertasContainer').innerHTML =
-            '<div class="eu-empty-access">Error al cargar puertas</div>';
+            '<div class="eu-empty-access is-error"><i class="ti ti-alert-circle" aria-hidden="true"></i>Error al cargar puertas</div>';
     });
 });
 
-function saveGroup() {
+// Quita el esqueleto del resumen cuando termina la carga (bien o con error)
+function terminarCargaInfo() {
+    var info = document.getElementById('euInfoGrid');
+    if (info) {
+        info.classList.remove('is-loading');
+        info.removeAttribute('aria-busy');
+    }
+}
+
+function restaurarBotonGuardar() {
+    var btn = document.getElementById('saveGroupBtn');
+    if (!btn) return;
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-device-floppy" aria-hidden="true"></i>Guardar cambios';
+}
+
+async function saveGroup() {
     var params  = new URLSearchParams(window.location.search);
     var id      = params.get('id');
     var codigo  = document.getElementById('groupCodigo').value.trim();
@@ -230,6 +262,30 @@ function saveGroup() {
     if (!codigo || !nombre) {
         UIService.showError('Por favor completa todos los campos');
         return;
+    }
+
+    var btn = document.getElementById('saveGroupBtn');
+    if (btn && btn.disabled) return;
+
+    // Quitar accesos es borrar: se confirma en modo peligro
+    var quitadas = Array.prototype.filter.call(
+        document.querySelectorAll('#puertasContainer input[type=checkbox]'),
+        function(cb) { return cb.dataset.original === 'true' && !cb.checked; }
+    ).length;
+    if (quitadas > 0) {
+        var ok = await UIService.confirmDialog({
+            title: 'Quitar accesos',
+            message: 'Este grupo perderá el acceso a ' + quitadas + (quitadas === 1 ? ' puerta' : ' puertas') + '. ¿Deseas continuar?',
+            confirmText: 'Quitar acceso',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+        if (!ok) return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-loader-2 ti-spin" aria-hidden="true"></i>Guardando...';
     }
 
     var data    = { codigo: codigo, nombre: nombre, estatus: estatus };
@@ -260,6 +316,7 @@ function saveGroup() {
         setTimeout(function() { window.location.href = 'administracion-grupos.html'; }, 1200);
     }).catch(function(e) {
         console.error(e);
+        restaurarBotonGuardar();
         UIService.showError('Error al guardar el grupo');
     });
 }

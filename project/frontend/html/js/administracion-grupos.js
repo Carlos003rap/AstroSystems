@@ -15,8 +15,10 @@ window.addEventListener('load', function() {
 function loadGroups() {
     var loadingState = document.getElementById('loadingState');
     var noResults    = document.getElementById('noResults');
+    var errorState   = document.getElementById('groupsError');
     if (loadingState) loadingState.style.display = 'block';
     if (noResults)    noResults.style.display    = 'none';
+    if (errorState)   errorState.hidden          = true;
 
     apiClient.getGroups(currentPage, pageSize).then(function(res) {
         var groups = (res.content || res || []).map(function(g) {
@@ -28,6 +30,10 @@ function loadGroups() {
     }).catch(function() {
         UIService.showError('Error al cargar grupos');
         if (loadingState) loadingState.style.display = 'none';
+        // Estado de error dentro de la tabla (no se queda en blanco)
+        var tbodyErr = document.getElementById('groupsTableBody');
+        if (tbodyErr) tbodyErr.innerHTML = '';
+        if (errorState) errorState.hidden = false;
     });
 }
 
@@ -59,11 +65,11 @@ function renderGroups(groups) {
         tr.innerHTML =
             '<td>' + g.Id_grupo + '</td>' +
             '<td><span class="code-pill-grupo">' + g.Codigo + '</span></td>' +
-            '<td>' + g.Nombre + '</td>' +
+            '<td class="col-name">' + g.Nombre + '</td>' +
             '<td><span class="status-badge ' + estadoClass + '">' + g.Estatus + '</span></td>' +
             '<td>' + (puedeEditar
-                ? '<a class="btn-action edit" href="editar-grupo.html?id=' + g.Id_grupo + '"><i class="ti ti-edit"></i>Editar</a>'
-                : '<span class="text-muted">Solo lectura</span>') + '</td>';
+                ? '<div class="action-btns"><a class="btn-action edit is-icon" href="editar-grupo.html?id=' + g.Id_grupo + '" title="Editar grupo ' + g.Codigo + '"><i class="ti ti-edit" aria-hidden="true"></i><span class="btn-label">Editar</span></a></div>'
+                : '<span class="text-muted"><i class="ti ti-lock" aria-hidden="true"></i>Solo lectura</span>') + '</td>';
         tbody.appendChild(tr);
     });
 }

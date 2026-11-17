@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
         errorText.textContent = msg;
         errorMessage.classList.add('show');
         successMessage.classList.remove('show');
+        sacudirTarjeta();
     }
 
     function showSuccess(msg) {
@@ -45,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     resetForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        if (submitBtn.disabled) return;
         errorMessage.classList.remove('show');
         successMessage.classList.remove('show');
 
@@ -61,19 +63,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Guardando...';
+        var avisoTimer = setTimeout(mostrarAvisoServidor, 6000);
+        submitBtn.innerHTML = '<i class="ti ti-loader-2 ti-spin" aria-hidden="true"></i> Guardando...';
 
         try {
             var result = await apiClient.resetPassword(token, newPassword);
+            ocultarAvisoServidor(avisoTimer);
             showSuccess((result.message || 'Contraseña actualizada correctamente') + '. Redirigiendo al inicio de sesión...');
             resetForm.style.display = 'none';
             setTimeout(function() {
                 window.location.href = 'login.html';
             }, 2500);
         } catch (error) {
+            ocultarAvisoServidor(avisoTimer);
             showError(error.message || 'No se pudo restablecer la contraseña');
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="ti ti-device-floppy"></i>Guardar nueva contraseña';
+            submitBtn.innerHTML = '<i class="ti ti-device-floppy" aria-hidden="true"></i>Guardar nueva contraseña';
         }
     });
 });
+
+// ── Ayudas de interfaz (mismas que en el login) ──
+function sacudirTarjeta() {
+    var tarjeta = document.querySelector('.login-container');
+    if (!tarjeta) return;
+    tarjeta.classList.remove('shake');
+    void tarjeta.offsetWidth;
+    tarjeta.classList.add('shake');
+}
+
+function mostrarAvisoServidor() {
+    var aviso = document.getElementById('serverNotice');
+    if (aviso) aviso.classList.add('show');
+}
+
+function ocultarAvisoServidor(timer) {
+    clearTimeout(timer);
+    var aviso = document.getElementById('serverNotice');
+    if (aviso) aviso.classList.remove('show');
+}

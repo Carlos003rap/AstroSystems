@@ -1,0 +1,512 @@
+/* ============================================
+   LAYOUT COMPARTIDO - ASTRO SISTEMAS
+   Contenedor, sidebar (con menú deslizable en celular) y botón de menú.
+   Lo usan todas las páginas con sesión (dashboard y administración).
+   ============================================ */
+
+.dashboard-container,
+.admin-container {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-page);
+}
+
+/* ── SIDEBAR ── */
+.sidebar,
+.admin-sidebar {
+    width: 240px;
+    background: linear-gradient(180deg, var(--green-600) 0%, var(--green-700) 100%);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    overflow: hidden;
+    transition: transform var(--dur-slow) var(--ease-out), visibility 0s;
+}
+
+.sidebar.collapsed,
+.admin-sidebar.collapsed {
+    width: 60px;
+}
+
+/* ── CONTENIDO PRINCIPAL ── */
+.main-content,
+.admin-main {
+    margin-left: 240px;
+    flex: 1;
+    min-width: 0;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 100vh;
+}
+
+.main-content.collapsed,
+.admin-main.collapsed {
+    margin-left: 60px;
+}
+
+/* Entrada escalonada de los bloques de la página */
+.main-content > *,
+.admin-main > * {
+    animation: fade-up var(--dur-slow) var(--ease-out) backwards;
+}
+
+.main-content > :nth-child(2), .admin-main > :nth-child(2) { animation-delay: 60ms; }
+.main-content > :nth-child(3), .admin-main > :nth-child(3) { animation-delay: 120ms; }
+.main-content > :nth-child(4), .admin-main > :nth-child(4) { animation-delay: 180ms; }
+.main-content > :nth-child(5), .admin-main > :nth-child(5) { animation-delay: 240ms; }
+.main-content > :nth-child(n+6), .admin-main > :nth-child(n+6) { animation-delay: 300ms; }
+
+/* ── Parte de arriba del sidebar ── */
+.sidebar-header,
+.admin-sidebar-header {
+    padding: 16px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.sidebar-logo-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+    color: white;
+}
+
+.sidebar-logo-text {
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    transition: opacity var(--dur-base);
+    white-space: nowrap;
+}
+
+.sidebar.collapsed .sidebar-logo-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+/* Perfil: avatar a la izquierda, nombre y rol en dos líneas */
+.sidebar-profile {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 10px;
+    align-items: center;
+    overflow: hidden;
+}
+
+.profile-avatar {
+    grid-row: 1 / span 2;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.profile-name {
+    align-self: end;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity var(--dur-base);
+}
+
+.profile-role {
+    align-self: start;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.62);
+    white-space: nowrap;
+    transition: opacity var(--dur-base);
+}
+
+.sidebar.collapsed .profile-name,
+.sidebar.collapsed .profile-role {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+/* ── Menú ── */
+.sidebar-menu {
+    flex: 1;
+    padding: 10px 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.menu-section-title {
+    padding: 10px 0 4px 20px;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.45);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    transition: opacity var(--dur-base);
+}
+
+.sidebar.collapsed .menu-section-title {
+    opacity: 0;
+}
+
+.menu-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: calc(100% - 16px);
+    margin: 2px 8px;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 13.5px;
+    font-family: inherit;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.menu-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: #fff;
+    transform: scaleY(0);
+    transition: transform var(--dur-base) var(--ease-out);
+}
+
+.menu-item i {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.menu-item span {
+    transition: opacity var(--dur-base);
+}
+
+.menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.menu-item.active {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-weight: 600;
+}
+
+.menu-item.active::before {
+    transform: scaleY(1);
+}
+
+.menu-item.submenu {
+    padding-left: 40px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.sidebar.collapsed .menu-item {
+    justify-content: center;
+    gap: 0;
+    padding: 10px 0;
+}
+
+.sidebar.collapsed .menu-item span {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+.sidebar.collapsed .menu-item.submenu {
+    display: none;
+}
+
+/* ── Pie del sidebar ── */
+.sidebar-footer {
+    padding: 12px;
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.logout-btn i {
+    font-size: 17px;
+    flex-shrink: 0;
+}
+
+.logout-btn span {
+    transition: opacity var(--dur-base);
+}
+
+.sidebar.collapsed .logout-btn {
+    justify-content: center;
+    gap: 0;
+}
+
+.sidebar.collapsed .logout-btn span {
+    opacity: 0;
+    width: 0;
+}
+
+.logout-btn:hover {
+    background: rgba(220, 50, 50, 0.28);
+    border-color: rgba(255, 120, 120, 0.4);
+    color: #fff;
+}
+
+.sidebar a:focus-visible,
+.sidebar button:focus-visible {
+    outline-color: #fff;
+    outline-offset: -2px;
+}
+
+/* ── Botón de menú (arriba a la izquierda de cada página) ── */
+.sidebar-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-text-light);
+    font-size: 18px;
+    padding: 0;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.sidebar-toggle:hover {
+    background: var(--green-50);
+    color: var(--color-primary);
+    border-color: var(--green-200);
+}
+
+/* ── Fondo oscuro detrás del menú deslizable ── */
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(15, 30, 24, 0.45);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-base);
+}
+
+.sidebar-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--dur-base) var(--ease-out), visibility 0s;
+}
+
+body.no-scroll {
+    overflow: hidden;
+}
+
+/* ── CELULAR Y TABLET: el sidebar se vuelve un panel que se desliza ── */
+@media (max-width: 900px) {
+    .sidebar,
+    .admin-sidebar {
+        width: min(280px, 86vw);
+        transform: translateX(-104%);
+        visibility: hidden;
+        transition: transform var(--dur-slow) var(--ease-out),
+                    visibility 0s linear var(--dur-slow);
+    }
+
+    .sidebar.is-open,
+    .admin-sidebar.is-open {
+        transform: translateX(0);
+        visibility: visible;
+        box-shadow: var(--shadow-lg);
+        transition: transform var(--dur-slow) var(--ease-out), visibility 0s;
+    }
+
+    .main-content,
+    .main-content.collapsed,
+    .admin-main,
+    .admin-main.collapsed {
+        margin-left: 0;
+        padding: 16px;
+        gap: 16px;
+    }
+}
+
+@media (pointer: coarse) {
+    .sidebar-toggle {
+        width: 44px;
+        height: 44px;
+    }
+
+    .menu-item {
+        padding: 12px;
+    }
+}
+
+/* ── CABECERA DE PÁGINA (compartida) ──
+   .header (dashboard), .admin-header (listados) y .editor-header (edición) */
+.header,
+.admin-header,
+.editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    padding: 2px 0 18px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.editor-header {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
+
+.header-left,
+.admin-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.header-left > div,
+.admin-header-left > div,
+.editor-header > div {
+    min-width: 0;
+}
+
+.header h1,
+.admin-header h1,
+.editor-header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--green-900);
+}
+
+.header p,
+.admin-header p,
+.editor-header p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--color-text-light);
+}
+
+/* Línea pequeña sobre el título (saludo, sección) */
+.page-eyebrow {
+    display: block;
+    margin: 0 0 2px;
+    font-size: 12px !important;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--green-600) !important;
+}
+
+/* Insignia del rol en la cabecera */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--green-200);
+    border-radius: var(--radius-full);
+    background: var(--green-50);
+    color: var(--green-700);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .header h1,
+    .admin-header h1,
+    .editor-header h1 {
+        font-size: 20px;
+    }
+
+    .header p,
+    .admin-header p,
+    .editor-header p {
+        font-size: 13px;
+    }
+
+    .header,
+    .admin-header,
+    .editor-header {
+        padding-bottom: 14px;
+    }
+}
