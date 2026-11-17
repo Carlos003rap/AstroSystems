@@ -223,6 +223,14 @@ function renderTable() {
         return matchS && matchR && matchD && matchH;
     });
 
+    // Mostrar primero lo más reciente (fecha y hora descendente; a igual momento, el ID mayor)
+    filtered.sort(function(a, b) {
+        var ta = (a.fecha || '') + ' ' + (a.hora || '');
+        var tb = (b.fecha || '') + ' ' + (b.hora || '');
+        if (ta !== tb) return ta < tb ? 1 : -1;
+        return (b.id || 0) - (a.id || 0);
+    });
+
     document.getElementById('tableCount').textContent = filtered.length + ' registros encontrados';
     document.getElementById('emptyState').style.display = (filtered.length || AUD_ERROR) ? 'none' : 'block';
 
