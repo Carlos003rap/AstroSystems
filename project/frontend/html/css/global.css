@@ -22,6 +22,10 @@
     --green-700: #275a47;
     --green-800: #1f4a3a;
     --green-900: #173a2d;
+    /* Canales RGB para usar el verde con transparencia: rgba(var(--green-rgb), .2) */
+    --green-rgb: 47, 107, 85;
+    --green-900-rgb: 23, 58, 45;
+    --ink-rgb: 15, 30, 24;
 
     /* Nombres que ya usan las páginas (se conservan) */
     --color-primary: var(--green-600);
@@ -34,6 +38,7 @@
     --color-border: #e2e9e5;
     --color-text: #1f2933;
     --color-text-light: #64748b;
+    --color-text-muted: #4b5a68; /* gris más oscuro para fondos translúcidos (AA) */
 
     /* Fondos: blanco en la página y en las tarjetas */
     --bg-page: #ffffff;
