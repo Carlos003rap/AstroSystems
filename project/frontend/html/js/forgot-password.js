@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
         errorText.textContent = msg;
         errorMessage.classList.add('show');
         successMessage.classList.remove('show');
+        sacudirTarjeta();
     }
 
     function showSuccess(msg) {
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     forgotForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        if (submitBtn.disabled) return;
         errorMessage.classList.remove('show');
         successMessage.classList.remove('show');
 
@@ -31,7 +33,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Enviando...';
+        var avisoTimer = setTimeout(mostrarAvisoServidor, 6000);
+        submitBtn.innerHTML = '<i class="ti ti-loader-2 ti-spin" aria-hidden="true"></i> Enviando...';
 
         try {
             var result = await apiClient.forgotPassword(email);
@@ -40,8 +43,29 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             showError('Ocurrió un error, intenta de nuevo en unos momentos');
         } finally {
+            ocultarAvisoServidor(avisoTimer);
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="ti ti-send"></i>Enviar enlace de recuperación';
+            submitBtn.innerHTML = '<i class="ti ti-send" aria-hidden="true"></i>Enviar enlace de recuperación';
         }
     });
 });
+
+// ── Ayudas de interfaz (mismas que en el login) ──
+function sacudirTarjeta() {
+    var tarjeta = document.querySelector('.login-container');
+    if (!tarjeta) return;
+    tarjeta.classList.remove('shake');
+    void tarjeta.offsetWidth;
+    tarjeta.classList.add('shake');
+}
+
+function mostrarAvisoServidor() {
+    var aviso = document.getElementById('serverNotice');
+    if (aviso) aviso.classList.add('show');
+}
+
+function ocultarAvisoServidor(timer) {
+    clearTimeout(timer);
+    var aviso = document.getElementById('serverNotice');
+    if (aviso) aviso.classList.remove('show');
+}
