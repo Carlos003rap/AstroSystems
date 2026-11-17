@@ -45,6 +45,9 @@
     --bg-card: #ffffff;
     --bg-subtle: var(--green-50);
     --border: var(--color-border);
+    --table-line: #edf2ef;
+    --table-hover: rgba(var(--green-rgb), 0.045);
+    --table-stripe: #fafcfb;
 
     /* Estados (solo para estados, no para decorar) */
     --state-success-bg: rgba(39, 174, 96, 0.12);
@@ -62,6 +65,7 @@
     --radius-lg: 16px;
     --radius-xl: 20px;
     --radius-full: 999px;
+    --radius-btn: 10px;
 
     --shadow-sm: 0 1px 2px rgba(16, 40, 30, 0.05), 0 4px 16px rgba(16, 40, 30, 0.06);
     --shadow-md: 0 2px 6px rgba(16, 40, 30, 0.06), 0 16px 40px rgba(16, 40, 30, 0.10);
@@ -123,6 +127,11 @@ img, svg {
 @keyframes pop-in {
     from { opacity: 0; transform: translateY(8px) scale(0.96); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes skeleton-pulse {
+    from { opacity: 1; }
+    to   { opacity: 0.45; }
 }
 
 @keyframes shimmer {
@@ -227,13 +236,6 @@ img, svg {
 .badge-warning { background: var(--state-warning-bg); color: var(--state-warning-fg); }
 .badge-neutral { background: var(--green-100);        color: var(--green-700); }
 
-.table-card {
-    overflow-x: auto;
-}
-
-.table-card table {
-    min-width: 700px;
-}
 
 /* ── Botones ── */
 button {
@@ -243,7 +245,7 @@ button {
     font-size: 14px;
     font-weight: 500;
     transition: var(--transition);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-btn);
     padding: 10px 16px;
 }
 
@@ -264,7 +266,7 @@ button:disabled {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-btn);
     font-weight: 600;
     text-decoration: none;
     transition: var(--transition);
@@ -377,12 +379,16 @@ a:hover {
     color: var(--color-tertiary);
 }
 
-/* ── Tabla base ── */
+/* ── Tablas (diseño único para todo el sistema) ──
+   Contenedor tipo tarjeta, encabezado verde claro en mayúsculas pequeñas,
+   solo líneas horizontales, hover verde muy tenue. */
 table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     margin: 20px 0;
-    background: white;
+    background: #fff;
+    font-size: 14px;
 }
 
 thead {
@@ -391,22 +397,72 @@ thead {
 }
 
 th {
-    font-size: 12.5px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-
-th, td {
-    padding: 12px 15px;
+    padding: 12px 16px;
+    font-size: 11.5px;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     text-align: left;
-    border-bottom: 1px solid var(--color-border);
-}
-
-tbody tr {
-}
-
-tbody tr:hover {
+    white-space: nowrap;
+    color: var(--green-800);
     background-color: var(--green-50);
+    border-bottom: 1px solid var(--green-100);
+}
+
+td {
+    padding: 14px 16px;
+    text-align: left;
+    vertical-align: middle;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--table-line);
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+tbody tr:hover td {
+    background-color: var(--table-hover);
+}
+
+/* Filas alternas opcionales: <table class="is-striped"> */
+table.is-striped tbody tr:nth-child(even) td {
+    background-color: var(--table-stripe);
+}
+
+/* Columna de acciones alineada a la derecha */
+th.col-actions,
+td.col-actions,
+td:has(> .action-btns) {
+    text-align: right;
+    width: 1%;
+    white-space: nowrap;
+}
+
+/* Números y códigos con ancho fijo */
+td.col-num,
+th.col-num {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Contenedor tarjeta para cualquier tabla */
+.table-card,
+.table-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 1px 2px rgba(var(--ink-rgb), 0.04);
+    overflow: hidden;
+}
+
+.table-card table,
+.table-section table {
+    margin: 0;
+}
+
+/* Fila de carga con esqueleto (UIService.renderSkeletonRows) */
+tr.is-skeleton:hover td {
+    background: transparent;
 }
 
 /* ── Esqueletos de carga ── */
@@ -415,9 +471,8 @@ tbody tr:hover {
     min-height: 1em;
     border-radius: var(--radius-sm);
     color: transparent !important;
-    background: linear-gradient(90deg, var(--green-50) 25%, var(--green-100) 37%, var(--green-50) 63%);
-    background-size: 300% 100%;
-    animation: shimmer 1.4s ease infinite;
+    background: var(--green-100);
+    animation: skeleton-pulse 1.2s var(--ease-in-out) infinite alternate;
     pointer-events: none;
     user-select: none;
 }
@@ -618,7 +673,7 @@ tbody tr:hover {
 
 /* ── Tablas que se vuelven tarjetas en celular ──
    La clase .rt y los data-label los pone UIService.enableResponsiveTables() */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
     table.rt {
         min-width: 0 !important;
         display: block;
@@ -641,13 +696,25 @@ tbody tr:hover {
         width: 100%;
     }
 
+    table.rt tbody {
+        padding: 12px;
+    }
+
     table.rt tr {
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         padding: 4px 14px;
         background: #fff;
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
+        box-shadow: 0 1px 2px rgba(var(--ink-rgb), 0.05);
+    }
+
+    table.rt tr:last-child {
+        margin-bottom: 0;
+    }
+
+    table.rt tbody tr:hover td {
+        background: transparent;
     }
 
     table.rt td {
@@ -655,10 +722,12 @@ tbody tr:hover {
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding: 10px 0;
-        border-bottom: 1px dashed var(--border);
+        min-height: 40px;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--table-line);
         text-align: right;
         overflow-wrap: anywhere;
+        white-space: normal;
     }
 
     table.rt td:last-child {
@@ -668,9 +737,10 @@ tbody tr:hover {
     table.rt td::before {
         content: attr(data-label);
         flex-shrink: 0;
-        font-size: 11.5px;
-        font-weight: 600;
-        letter-spacing: 0.04em;
+        max-width: 45%;
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--color-text-light);
         text-align: left;
@@ -687,6 +757,14 @@ tbody tr:hover {
     table.rt td.rt-empty {
         display: block;
         text-align: center;
+    }
+
+    table.rt td:has(> .action-btns) {
+        width: 100%;
+    }
+
+    table.rt tr.is-skeleton td::before {
+        display: none;
     }
 }
 

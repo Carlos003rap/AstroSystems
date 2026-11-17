@@ -102,9 +102,8 @@
     width: 64px;
     border-radius: var(--radius-sm);
     color: transparent;
-    background: linear-gradient(90deg, var(--green-50) 25%, var(--green-100) 37%, var(--green-50) 63%);
-    background-size: 300% 100%;
-    animation: shimmer 1.4s ease infinite;
+    background: var(--green-100);
+    animation: skeleton-pulse 1.2s var(--ease-in-out) infinite alternate;
 }
 
 /* Sin dato: el número se atenúa y aparece una nota */
