@@ -20,10 +20,10 @@
 
         <div class="editor-header">
             <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
-                <i class="ti ti-menu-2"></i>
+                <i class="ti ti-menu-2" aria-hidden="true"></i>
             </button>
-            <button class="back-btn" onclick="navigateTo('administracion-usuarios.html')" title="Volver">
-                <i class="ti ti-arrow-left"></i>
+            <button class="back-btn" onclick="navigateTo('administracion-usuarios.html')" title="Volver" aria-label="Volver a usuarios">
+                <i class="ti ti-arrow-left" aria-hidden="true"></i>
             </button>
             <div>
                 <h1>Editar Usuario <span id="headerUserId" class="header-id"></span></h1>
@@ -32,7 +32,7 @@
         </div>
 
         <!-- Info rapida -->
-        <div class="eu-info-grid">
+        <div class="eu-info-grid is-loading" id="euInfoGrid" aria-busy="true">
             <div class="eu-info-card">
                 <span>ID Usuario</span>
                 <strong id="infoId">—</strong>
@@ -50,11 +50,11 @@
         <!-- Formulario -->
         <div class="eu-form-card">
             <p class="eu-card-title">
-                <i class="ti ti-user-edit"></i>Datos del Usuario
+                <i class="ti ti-user-edit" aria-hidden="true"></i>Datos del Usuario
             </p>
             <div class="eu-form-row">
                 <div class="eu-fg">
-                    <label>ID Usuario</label>
+                    <label for="viewUserId">ID Usuario</label>
                     <input type="text" id="viewUserId" readonly title="ID Usuario" aria-label="ID Usuario">
                 </div>
                 <div class="eu-fg">
@@ -81,8 +81,8 @@
                 <button type="button" class="btn-cancel" onclick="navigateTo('administracion-usuarios.html')">
                     Cancelar
                 </button>
-                <button type="button" class="btn-save" onclick="saveUser()">
-                    <i class="ti ti-device-floppy"></i>Guardar cambios
+                <button type="button" class="btn-save" id="saveUserBtn" onclick="saveUser()">
+                    <i class="ti ti-device-floppy" aria-hidden="true"></i>Guardar cambios
                 </button>
             </div>
         </div>
@@ -90,11 +90,11 @@
         <!-- Accesos heredados del grupo -->
         <div class="eu-access-card">
             <p class="eu-card-title">
-                <i class="ti ti-door"></i>Accesos del Grupo (heredados via acceso_grupo)
+                <i class="ti ti-door" aria-hidden="true"></i>Accesos del Grupo (heredados via acceso_grupo)
             </p>
-            <div class="eu-access-grid" id="accessGrid">
+            <div class="eu-access-grid" id="accessGrid" aria-live="polite">
                 <div class="eu-empty-access">
-                    <i class="ti ti-lock"></i>
+                    <i class="ti ti-lock" aria-hidden="true"></i>
                     Selecciona un grupo para ver sus accesos
                 </div>
             </div>
@@ -124,6 +124,7 @@ window.addEventListener('load', function() {
         // 2. Cargar datos del usuario DESPUES de tener los grupos
         if (id) {
             apiClient.getUserById(id).then(function(u) {
+                terminarCargaInfo();
                 // Header
                 document.getElementById('headerUserId').textContent = '#' + String(u.idUsuario).padStart(3,'0');
                 // Cards de info
@@ -143,11 +144,15 @@ window.addEventListener('load', function() {
                 }
             }).catch(function(e) {
                 console.error(e);
+                terminarCargaInfo();
                 UIService.showError('Error al cargar usuario');
             });
+        } else {
+            terminarCargaInfo();
         }
     }).catch(function(e) {
         console.error(e);
+        terminarCargaInfo();
         UIService.showError('Error al cargar grupos');
     });
 
@@ -159,25 +164,35 @@ window.addEventListener('load', function() {
 
 function cargarAccesos(idGrupo) {
     var grid = document.getElementById('accessGrid');
-    grid.innerHTML = '<div class="eu-empty-access"><i class="ti ti-loader-2"></i> Cargando...</div>';
+    // Esqueleto mientras llegan los accesos
+    grid.innerHTML = '<div class="eu-access-item is-skeleton"></div><div class="eu-access-item is-skeleton"></div><div class="eu-access-item is-skeleton"></div><span class="sr-only">Cargando...</span>';
     apiClient.getAccesosByGrupo(idGrupo).then(function(res) {
         var accesos = res.content || res;
         if (!accesos || accesos.length === 0) {
-            grid.innerHTML = '<div class="eu-empty-access"><i class="ti ti-lock"></i>Sin accesos registrados</div>';
+            grid.innerHTML = '<div class="eu-empty-access"><i class="ti ti-lock" aria-hidden="true"></i>Sin accesos registrados</div>';
             return;
         }
         grid.innerHTML = accesos.map(function(a) {
             var nombre = a.puerta ? a.puerta.nombrePuerta : '—';
             var area   = a.puerta && a.puerta.area ? a.puerta.area.nombreArea : '';
             return '<div class="eu-access-item active">' +
-                '<i class="ti ti-door"></i>' +
+                '<i class="ti ti-door" aria-hidden="true"></i>' +
                 '<div><span>' + nombre + '</span>' + (area ? '<small>' + area + '</small>' : '') + '</div>' +
-                '<i class="ti ti-lock-open" style="margin-left:auto;color:#2f6b55"></i>' +
+                '<i class="ti ti-lock-open eu-access-ok" aria-hidden="true"></i>' +
             '</div>';
         }).join('');
     }).catch(function() {
-        grid.innerHTML = '<div class="eu-empty-access">Error al cargar accesos</div>';
+        grid.innerHTML = '<div class="eu-empty-access is-error"><i class="ti ti-alert-circle" aria-hidden="true"></i>Error al cargar accesos</div>';
     });
+}
+
+// Quita el esqueleto del resumen cuando termina la carga (bien o con error)
+function terminarCargaInfo() {
+    var info = document.getElementById('euInfoGrid');
+    if (info) {
+        info.classList.remove('is-loading');
+        info.removeAttribute('aria-busy');
+    }
 }
 
 function saveUser() {
@@ -193,6 +208,12 @@ function saveUser() {
     }
 
     var data    = { cedula: cedula, grupo: { idGrupo: parseInt(idGrupo) }, estatus: estatus };
+    var btn     = document.getElementById('saveUserBtn');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-loader-2 ti-spin" aria-hidden="true"></i>Guardando...';
+    }
     var promise = id ? apiClient.updateUser(id, data) : apiClient.createUser(data);
 
     promise.then(function() {
@@ -200,6 +221,10 @@ function saveUser() {
         setTimeout(function() { window.location.href = 'administracion-usuarios.html'; }, 1200);
     }).catch(function(e) {
         console.error(e);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-device-floppy" aria-hidden="true"></i>Guardar cambios';
+        }
         UIService.showError('Error al guardar. Revisa la consola.');
     });
 }
