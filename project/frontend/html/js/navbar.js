@@ -15,22 +15,22 @@ class NavbarService {
         const puedeVerAuditoria      = ['ADMIN', 'AUDITOR'].includes(rol);
 
         const itemUsuarios = puedeVerUsuariosGrupos ? `
-                <button class="menu-item" onclick="navigateTo('administracion-usuarios.html')">
+                <button class="menu-item" data-tip="Usuarios" onclick="navigateTo('administracion-usuarios.html')">
                     <i class="ti ti-users"></i><span>Usuarios</span>
                 </button>` : '';
 
         const itemGrupos = puedeVerUsuariosGrupos ? `
-                <button class="menu-item" onclick="navigateTo('administracion-grupos.html')">
+                <button class="menu-item" data-tip="Grupos" onclick="navigateTo('administracion-grupos.html')">
                     <i class="ti ti-users-group"></i><span>Grupos</span>
                 </button>` : '';
 
         const itemConsultas = puedeVerConsultas ? `
-                <button class="menu-item" onclick="navigateTo('consultas.html')">
+                <button class="menu-item" data-tip="Consultas" onclick="navigateTo('consultas.html')">
                     <i class="ti ti-search"></i><span>Consultas</span>
                 </button>` : '';
 
         const itemAuditoria = puedeVerAuditoria ? `
-                <button class="menu-item" onclick="navigateTo('auditoria.html')">
+                <button class="menu-item" data-tip="Auditoría" onclick="navigateTo('auditoria.html')">
                     <i class="ti ti-history"></i><span>Auditoría</span>
                 </button>` : '';
 
@@ -55,12 +55,17 @@ class NavbarService {
                     <div class="profile-avatar">${iniciales}</div>
                     <span class="profile-name" id="profileName">${nombre}</span>
                     <span class="profile-role" id="profileRole">${rol || ''}</span>
+                    <button type="button" class="sidebar-collapse-btn" id="sidebarCollapse"
+                            aria-controls="sidebar" aria-expanded="true" aria-label="Contraer menú" title="Contraer menú">
+                        <i class="ti ti-layout-sidebar-left-collapse" aria-hidden="true"></i>
+                    </button>
                 </div>
             </div>
 
             <nav class="sidebar-menu">
+                <span class="menu-indicator" aria-hidden="true"></span>
                 <div class="menu-section-title">Principal</div>
-                <button class="menu-item" onclick="navigateTo('dashboard.html')">
+                <button class="menu-item" data-tip="Panel de Control" onclick="navigateTo('dashboard.html')">
                     <i class="ti ti-layout-dashboard"></i><span>Panel de Control</span>
                 </button>
 
@@ -69,7 +74,7 @@ class NavbarService {
             </nav>
 
             <div class="sidebar-footer">
-                <button class="logout-btn" onclick="handleLogout()">
+                <button class="logout-btn" data-tip="Cerrar sesión" onclick="handleLogout()">
                     <i class="ti ti-logout"></i><span>Cerrar sesión</span>
                 </button>
             </div>
@@ -84,6 +89,52 @@ class NavbarService {
         }
         NavbarService.setActiveMenuItem();
         NavbarService.initToggle();
+        NavbarService.initIndicator();
+    }
+
+    /* ── Indicador deslizante de la opción activa (solo interfaz) ──
+       Al cambiar de página arranca donde estaba la opción anterior y se desliza a la nueva. */
+    static initIndicator() {
+        const menu = document.querySelector('.sidebar .sidebar-menu');
+        const ind = menu && menu.querySelector('.menu-indicator');
+        const activo = menu && menu.querySelector('.menu-item.active');
+        if (!ind || !activo) return;
+        const destino = activo.offsetTop;
+        let previo = null;
+        try { previo = sessionStorage.getItem('astroMenuPos'); } catch (e) { /* sin almacenamiento */ }
+        ind.style.height = activo.offsetHeight + 'px';
+        ind.style.transform = 'translateY(' + (previo !== null ? previo : destino) + 'px)';
+        menu.classList.add('has-indicator');
+        void ind.offsetWidth;
+        ind.classList.add('is-ready');
+        ind.style.transform = 'translateY(' + destino + 'px)';
+        try { sessionStorage.setItem('astroMenuPos', String(destino)); } catch (e) { /* sin almacenamiento */ }
+    }
+
+    /* ── Menú contraído a solo íconos (escritorio); se recuerda la preferencia ── */
+    static setCollapsed(contraer, guardar) {
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('mainContent') || document.getElementById('adminMain');
+        const btn = document.getElementById('sidebarCollapse');
+        const toggleBtn = document.getElementById('sidebarToggle');
+        if (!sidebar) return;
+        sidebar.classList.toggle('collapsed', contraer);
+        if (main) main.classList.toggle('collapsed', contraer);
+        if (btn) {
+            const texto = contraer ? 'Expandir menú' : 'Contraer menú';
+            btn.setAttribute('aria-expanded', contraer ? 'false' : 'true');
+            btn.setAttribute('aria-label', texto);
+            btn.setAttribute('title', texto);
+            btn.querySelector('i').className = 'ti ' + (contraer ? 'ti-layout-sidebar-left-expand' : 'ti-layout-sidebar-left-collapse');
+        }
+        if (toggleBtn && !NavbarService.isMobile()) toggleBtn.setAttribute('aria-expanded', contraer ? 'false' : 'true');
+        if (guardar) {
+            try { localStorage.setItem('astroSidebarMini', contraer ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
+        }
+    }
+
+    static prefiereContraido() {
+        try { return localStorage.getItem('astroSidebarMini') === '1'; } catch (e) { return false; }
     }
 
     static setActiveMenuItem() {
@@ -131,10 +182,18 @@ class NavbarService {
                     NavbarService.toggleDrawer();
                     return;
                 }
-                sidebar.classList.toggle('collapsed');
-                if (main) main.classList.toggle('collapsed');
-                toggleBtn.setAttribute('aria-expanded', sidebar.classList.contains('collapsed') ? 'false' : 'true');
+                NavbarService.setCollapsed(!sidebar.classList.contains('collapsed'), true);
             });
+        }
+
+        const collapseBtn = document.getElementById('sidebarCollapse');
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', function () {
+                NavbarService.setCollapsed(!sidebar.classList.contains('collapsed'), true);
+            });
+        }
+        if (!NavbarService.isMobile() && NavbarService.prefiereContraido()) {
+            NavbarService.setCollapsed(true, false);
         }
 
         // Esc cierra el menú deslizable (si otra ventana ya usó Esc, no se hace nada)
@@ -151,6 +210,8 @@ class NavbarService {
             if (mq.matches) {
                 sidebar.classList.remove('collapsed');
                 if (main) main.classList.remove('collapsed');
+            } else {
+                NavbarService.setCollapsed(NavbarService.prefiereContraido(), false);
             }
             if (toggleBtn) {
                 toggleBtn.setAttribute('aria-expanded', mq.matches ? 'false' : 'true');
