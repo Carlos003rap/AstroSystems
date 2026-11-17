@@ -31,78 +31,289 @@ class UIService {
         UIService.showToast(message, 'success');
     }
 
-    // ── Sistema de Toast notifications ──
+    // ── Toasts: los estilos viven en global.css (.toast, .toast-success, ...) ──
     static showToast(message, type) {
-        type = type || 'success';
+        var tipos = ['success', 'error', 'warning', 'info'];
+        type = tipos.indexOf(type) !== -1 ? type : 'success';
 
-        // Crear contenedor si no existe
+        var iconos = {
+            success: 'ti-circle-check',
+            error:   'ti-circle-x',
+            warning: 'ti-alert-triangle',
+            info:    'ti-info-circle'
+        };
+
         var container = document.getElementById('toastContainer');
         if (!container) {
             container = document.createElement('div');
             container.id = 'toastContainer';
-            container.style.cssText = [
-                'position:fixed',
-                'top:20px',
-                'right:20px',
-                'z-index:9999',
-                'display:flex',
-                'flex-direction:column',
-                'gap:8px',
-                'pointer-events:none'
-            ].join(';');
+            container.className = 'toast-container';
+            container.setAttribute('aria-live', 'polite');
             document.body.appendChild(container);
         }
 
-        var colors = {
-            success: { bg:'#eaf3ea', border:'#2f6b55', text:'#2f6b55', icon:'ti-circle-check' },
-            error:   { bg:'#fee2e2', border:'#dc2626', text:'#dc2626', icon:'ti-circle-x'     },
-            warning: { bg:'#fef3c7', border:'#d97706', text:'#d97706', icon:'ti-alert-circle'  },
-            info:    { bg:'#dbeafe', border:'#1d4ed8', text:'#1d4ed8', icon:'ti-info-circle'   }
-        };
-
-        var c = colors[type] || colors.success;
+        var duracion = type === 'error' ? 5000 : 3500;
 
         var toast = document.createElement('div');
-        toast.style.cssText = [
-            'display:flex',
-            'align-items:center',
-            'gap:10px',
-            'padding:12px 16px',
-            'background:' + c.bg,
-            'border:1.5px solid ' + c.border,
-            'border-radius:10px',
-            'font-family:Segoe UI,sans-serif',
-            'font-size:13px',
-            'font-weight:600',
-            'color:' + c.text,
-            'box-shadow:0 4px 16px rgba(0,0,0,0.12)',
-            'pointer-events:all',
-            'animation:toastIn 0.25s ease',
-            'min-width:260px',
-            'max-width:360px'
-        ].join(';');
+        toast.className = 'toast toast-' + type;
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        toast.style.setProperty('--toast-ms', duracion + 'ms');
 
-        toast.innerHTML = '<i class="ti ' + c.icon + '" style="font-size:18px;flex-shrink:0"></i>' +
-            '<span style="flex:1">' + message + '</span>';
+        var icono = document.createElement('i');
+        icono.className = 'ti ' + iconos[type] + ' toast-icon';
+        icono.setAttribute('aria-hidden', 'true');
 
-        // Agregar estilo de animación si no existe
-        if (!document.getElementById('toastStyle')) {
-            var style = document.createElement('style');
-            style.id = 'toastStyle';
-            style.textContent = '@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}' +
-                '@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(20px)}}';
-            document.head.appendChild(style);
-        }
+        var cuerpo = document.createElement('span');
+        cuerpo.className = 'toast-body';
+        cuerpo.textContent = message;
 
+        var barra = document.createElement('span');
+        barra.className = 'toast-progress';
+
+        toast.appendChild(icono);
+        toast.appendChild(cuerpo);
+        toast.appendChild(barra);
         container.appendChild(toast);
 
-        // Auto-remover con animación
-        setTimeout(function() {
-            toast.style.animation = 'toastOut 0.25s ease forwards';
+        var cerrado = false;
+        function cerrar() {
+            if (cerrado) return;
+            cerrado = true;
+            toast.classList.add('is-leaving');
             setTimeout(function() {
                 if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 250);
-        }, 3500);
+            }, 240);
+        }
+
+        toast.addEventListener('click', cerrar);
+        setTimeout(cerrar, duracion);
+    }
+
+    // ── Ventana de confirmación propia (reemplaza a confirm()) ──
+    // Devuelve una promesa: true si confirma, false si cancela, pulsa Esc o hace clic fuera.
+    static confirmDialog(opts) {
+        opts = opts || {};
+        return new Promise(function(resolve) {
+            var anterior = document.activeElement;
+            var peligro = opts.danger === true;
+            var uid = 'cd' + Date.now();
+
+            var fondo = document.createElement('div');
+            fondo.className = 'modal-backdrop';
+
+            var dialogo = document.createElement('div');
+            dialogo.className = 'modal-dialog confirm-dialog' + (peligro ? ' is-danger' : '');
+            dialogo.setAttribute('role', 'alertdialog');
+            dialogo.setAttribute('aria-modal', 'true');
+            dialogo.setAttribute('aria-labelledby', uid + 't');
+            dialogo.setAttribute('aria-describedby', uid + 'm');
+
+            var icono = document.createElement('div');
+            icono.className = 'confirm-icon';
+            icono.innerHTML = '<i class="ti ' + (peligro ? 'ti-alert-triangle' : 'ti-help-circle') + '" aria-hidden="true"></i>';
+
+            var titulo = document.createElement('h3');
+            titulo.className = 'confirm-title';
+            titulo.id = uid + 't';
+            titulo.textContent = opts.title || 'Confirmar acción';
+
+            var mensaje = document.createElement('p');
+            mensaje.className = 'confirm-message';
+            mensaje.id = uid + 'm';
+            mensaje.textContent = opts.message || '';
+
+            var acciones = document.createElement('div');
+            acciones.className = 'confirm-actions';
+
+            var cancelar = document.createElement('button');
+            cancelar.type = 'button';
+            cancelar.className = 'btn-ghost';
+            cancelar.textContent = opts.cancelText || 'Cancelar';
+
+            var aceptar = document.createElement('button');
+            aceptar.type = 'button';
+            aceptar.className = peligro ? 'btn-danger' : 'btn-primary';
+            aceptar.textContent = opts.confirmText || 'Aceptar';
+
+            acciones.appendChild(cancelar);
+            acciones.appendChild(aceptar);
+            dialogo.appendChild(icono);
+            dialogo.appendChild(titulo);
+            dialogo.appendChild(mensaje);
+            dialogo.appendChild(acciones);
+            fondo.appendChild(dialogo);
+            document.body.appendChild(fondo);
+
+            var cerrado = false;
+            function cerrar(resultado) {
+                if (cerrado) return;
+                cerrado = true;
+                document.removeEventListener('keydown', teclado, true);
+                fondo.classList.remove('is-visible');
+                if (anterior && typeof anterior.focus === 'function') anterior.focus();
+                setTimeout(function() {
+                    if (fondo.parentNode) fondo.parentNode.removeChild(fondo);
+                }, 260);
+                resolve(resultado);
+            }
+
+            function teclado(e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cerrar(false);
+                } else if (e.key === 'Tab') {
+                    // El foco se queda dentro de la ventana
+                    var primero = cancelar;
+                    var ultimo = aceptar;
+                    if (e.shiftKey && document.activeElement === primero) {
+                        e.preventDefault();
+                        ultimo.focus();
+                    } else if (!e.shiftKey && document.activeElement === ultimo) {
+                        e.preventDefault();
+                        primero.focus();
+                    }
+                }
+            }
+
+            cancelar.addEventListener('click', function() { cerrar(false); });
+            aceptar.addEventListener('click', function() { cerrar(true); });
+            fondo.addEventListener('mousedown', function(e) {
+                if (e.target === fondo) cerrar(false);
+            });
+            document.addEventListener('keydown', teclado, true);
+
+            requestAnimationFrame(function() {
+                fondo.classList.add('is-visible');
+                (peligro ? cancelar : aceptar).focus();
+            });
+        });
+    }
+
+    // ── Estado vacío o de error dentro de un contenedor o <tbody> ──
+    // opts: { icon: 'ti-search-off', title: '...', text: '...', error: false }
+    static renderEmptyState(target, opts) {
+        if (!target) return;
+        opts = opts || {};
+
+        var caja = document.createElement('div');
+        caja.className = 'empty-state' + (opts.error ? ' is-error' : '');
+
+        var icono = document.createElement('div');
+        icono.className = 'empty-state-icon';
+        icono.innerHTML = '<i class="ti ' + (opts.icon || 'ti-inbox') + '" aria-hidden="true"></i>';
+        caja.appendChild(icono);
+
+        var titulo = document.createElement('div');
+        titulo.className = 'empty-state-title';
+        titulo.textContent = opts.title || 'Sin resultados';
+        caja.appendChild(titulo);
+
+        if (opts.text) {
+            var texto = document.createElement('div');
+            texto.className = 'empty-state-text';
+            texto.textContent = opts.text;
+            caja.appendChild(texto);
+        }
+
+        target.innerHTML = '';
+
+        if (target.tagName === 'TBODY') {
+            var tabla = target.closest('table');
+            var columnas = tabla ? tabla.querySelectorAll('thead th').length : 1;
+            var tr = document.createElement('tr');
+            var td = document.createElement('td');
+            td.colSpan = Math.max(columnas, 1);
+            td.appendChild(caja);
+            tr.appendChild(td);
+            target.appendChild(tr);
+        } else {
+            target.appendChild(caja);
+        }
+    }
+
+    // ── Filas de esqueleto mientras llegan los datos ──
+    static renderSkeletonRows(tbody, cols, rows) {
+        if (!tbody) return;
+        cols = cols || 4;
+        rows = rows || 5;
+        tbody.innerHTML = '';
+        for (var r = 0; r < rows; r++) {
+            var tr = document.createElement('tr');
+            tr.className = 'is-skeleton';
+            for (var c = 0; c < cols; c++) {
+                var td = document.createElement('td');
+                var barra = document.createElement('span');
+                barra.className = 'skeleton skeleton-line';
+                barra.style.width = (55 + ((r + c) % 4) * 10) + '%';
+                td.appendChild(barra);
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+        }
+    }
+
+    // ── Tablas que se vuelven tarjetas en celular ──
+    // Pone data-label en cada celda copiando el texto del encabezado y vuelve a hacerlo
+    // cada vez que la página llena la tabla de nuevo.
+    static enableResponsiveTables(root) {
+        root = root || document;
+        root.querySelectorAll('table').forEach(function(table) {
+            if (table.dataset.rt) return;
+            table.dataset.rt = '1';
+            table.classList.add('rt');
+            UIService._etiquetarTabla(table);
+            var tbody = table.tBodies[0];
+            if (tbody) {
+                new MutationObserver(function() {
+                    UIService._etiquetarTabla(table);
+                }).observe(tbody, { childList: true });
+            }
+        });
+    }
+
+    static _etiquetarTabla(table) {
+        var etiquetas = Array.prototype.map.call(table.querySelectorAll('thead th'), function(th) {
+            return th.textContent.trim();
+        });
+        table.querySelectorAll('tbody tr').forEach(function(tr) {
+            var indice = 0;
+            Array.prototype.forEach.call(tr.children, function(td) {
+                if (td.tagName !== 'TD') return;
+                var ancho = td.colSpan || 1;
+                if (ancho > 1) {
+                    td.classList.add('rt-empty');
+                    td.setAttribute('data-label', '');
+                } else if (!td.hasAttribute('data-label')) {
+                    td.setAttribute('data-label', etiquetas[indice] || '');
+                }
+                indice += ancho;
+            });
+        });
+    }
+
+    // ── Contador animado (respeta "reducir movimiento") ──
+    static countUp(el, to, ms) {
+        if (!el) return;
+        var destino = Number(to);
+        var reducir = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!isFinite(destino) || reducir) {
+            el.textContent = to;
+            return;
+        }
+        ms = ms || 900;
+        var inicio = null;
+        function paso(t) {
+            if (inicio === null) inicio = t;
+            var avance = Math.min((t - inicio) / ms, 1);
+            var suave = 1 - Math.pow(1 - avance, 3);
+            el.textContent = Math.round(destino * suave);
+            if (avance < 1) {
+                requestAnimationFrame(paso);
+            } else {
+                el.textContent = destino;
+            }
+        }
+        requestAnimationFrame(paso);
     }
 
     // ── Mostrar loading ──
@@ -120,7 +331,7 @@ class UIService {
         if (!tbody) return;
         tbody.innerHTML = '';
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="' + columns.length + '" style="text-align:center;padding:20px;color:#94a3b8">No hay datos</td></tr>';
+            UIService.renderEmptyState(tbody, { icon: 'ti-database-off', title: 'No hay datos' });
             return;
         }
         data.forEach(function(row) {
