@@ -6,6 +6,22 @@
 //    Antes usaba Promise.all, y si Puertas/Areas/Accesos fallaban
 //    (403 para roles sin permiso), TODA la pagina se rompia,
 //    incluyendo Usuarios/Grupos que ese rol si podia ver. ──
+// Estado de carga por pestaña para la interfaz: 'cargando', 'listo' o 'error'
+var CARGA = { usuarios: 'cargando', grupos: 'cargando', puertas: 'cargando', areas: 'cargando' };
+
+function marcarCarga(tab, estado) {
+    CARGA[tab] = estado;
+    if (typeof currentTab !== 'undefined' && currentTab === tab && typeof renderList === 'function') renderList();
+}
+
+// Vuelve a pedir los datos de la pestaña actual
+function reintentarConsulta() {
+    var cargadores = { usuarios: cargarUsuarios, grupos: cargarGrupos, puertas: cargarPuertas, areas: cargarAreas };
+    if (!cargadores[currentTab]) return;
+    marcarCarga(currentTab, 'cargando');
+    cargadores[currentTab]();
+}
+
 function loadAllData() {
     cargarUsuarios();
     cargarGrupos();
@@ -36,9 +52,11 @@ function cargarUsuarios() {
                 estatus: u.estatus
             };
         });
+        CARGA['usuarios'] = 'listo';
         if (currentTab === 'usuarios') renderList();
     }).catch(function(e) {
         console.error('Error cargando usuarios:', e);
+        marcarCarga('usuarios', 'error');
     });
 }
 
@@ -53,9 +71,11 @@ function cargarGrupos() {
                 estatus: g.estatus
             };
         });
+        CARGA['grupos'] = 'listo';
         if (currentTab === 'grupos') renderList();
     }).catch(function(e) {
         console.error('Error cargando grupos:', e);
+        marcarCarga('grupos', 'error');
     });
 }
 
@@ -70,9 +90,11 @@ function cargarPuertas() {
                 area:   p.area ? p.area.nombreArea : ''
             };
         });
+        CARGA['puertas'] = 'listo';
         if (currentTab === 'puertas') renderList();
     }).catch(function(e) {
         console.error('Error cargando puertas:', e);
+        marcarCarga('puertas', 'error');
     });
 }
 
@@ -85,9 +107,11 @@ function cargarAreas() {
                 nombre: a.nombreArea
             };
         });
+        CARGA['areas'] = 'listo';
         if (currentTab === 'areas') renderList();
     }).catch(function(e) {
         console.error('Error cargando areas:', e);
+        marcarCarga('areas', 'error');
     });
 }
 
