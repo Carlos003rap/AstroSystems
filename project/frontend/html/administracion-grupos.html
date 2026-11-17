@@ -20,7 +20,7 @@
         <div class="admin-header">
             <div class="admin-header-left">
                 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
-                    <i class="ti ti-menu-2"></i>
+                    <i class="ti ti-menu-2" aria-hidden="true"></i>
                 </button>
                 <div>
                     <h1>Administración de Grupos</h1>
@@ -32,8 +32,8 @@
         <!-- Busqueda y filtros -->
         <div class="search-bar">
             <div class="search-wrap">
-                <i class="ti ti-search"></i>
-                <input type="text" id="searchInput" placeholder="Buscar por código o nombre..." oninput="filterTable()" autocomplete="off">
+                <i class="ti ti-search" aria-hidden="true"></i>
+                <input type="text" id="searchInput" aria-label="Buscar por código o nombre" placeholder="Buscar por código o nombre..." oninput="filterTable()" autocomplete="off">
             </div>
             <div class="filter-sep"></div>
             <div class="filter-select">
@@ -55,10 +55,10 @@
                 </div>
                 <div class="table-actions">
                     <button class="btn-export" onclick="exportTable('groupsTable','csv')">
-                        <i class="ti ti-file-type-csv"></i>CSV
+                        <i class="ti ti-file-type-csv" aria-hidden="true"></i>CSV
                     </button>
                     <button class="btn-export" onclick="exportTable('groupsTable','xlsx')">
-                        <i class="ti ti-file-spreadsheet"></i>Excel
+                        <i class="ti ti-file-spreadsheet" aria-hidden="true"></i>Excel
                     </button>
                 </div>
             </div>
@@ -71,7 +71,7 @@
                             <th>Código</th>
                             <th>Nombre</th>
                             <th>Estatus</th>
-                            <th>Acciones</th>
+                            <th class="col-actions">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="groupsTableBody">
@@ -79,22 +79,30 @@
                     </tbody>
                 </table>
                 <div class="no-results" id="noResults" style="display:none">
-                    <i class="ti ti-search-off"></i>
+                    <i class="ti ti-search-off" aria-hidden="true"></i>
                     No se encontraron grupos con ese criterio
                 </div>
-                <div class="loading-state" id="loadingState">
-                    <i class="ti ti-loader-2"></i>
+                <div class="loading-state" id="loadingState" role="status">
+                    <i class="ti ti-loader-2" aria-hidden="true"></i>
                     Cargando grupos...
+                </div>
+                <div class="table-state is-error" id="groupsError" role="alert" hidden>
+                    <i class="ti ti-cloud-off" aria-hidden="true"></i>
+                    <span class="table-state-title">No se pudieron cargar los grupos</span>
+                    <span>Revisa tu conexión e inténtalo de nuevo.</span>
+                    <button type="button" class="btn-secondary" onclick="loadGroups()">
+                        <i class="ti ti-refresh" aria-hidden="true"></i> Reintentar
+                    </button>
                 </div>
             </div>
 
             <div class="pagination">
                 <button id="prevBtn" onclick="previousPage()" disabled>
-                    <i class="ti ti-chevron-left"></i> Anterior
+                    <i class="ti ti-chevron-left" aria-hidden="true"></i> Anterior
                 </button>
-                <span id="pageInfo">Página 1 de 1</span>
+                <span id="pageInfo" aria-live="polite">Página 1 de 1</span>
                 <button id="nextBtn" onclick="nextPage()" disabled>
-                    Siguiente <i class="ti ti-chevron-right"></i>
+                    Siguiente <i class="ti ti-chevron-right" aria-hidden="true"></i>
                 </button>
             </div>
         </div>

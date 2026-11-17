@@ -750,6 +750,10 @@
 
     .table-wrapper {
         overflow-x: visible;
+    }
+
+    /* Fondo tenue detrás de las tarjetas solo cuando hay filas */
+    .table-wrapper:has(tbody tr) {
         background: var(--green-50);
     }
 
@@ -824,5 +828,20 @@
     .form-group input,
     .form-group select {
         min-height: 44px;
+    }
+}
+
+/* ── Columna de nombres largos (grupos) ── */
+.table-section tbody td.col-name {
+    min-width: 220px;
+    max-width: 420px;
+    white-space: normal;
+    line-height: 1.45;
+}
+
+@media (max-width: 768px) {
+    .table-section tbody td.col-name {
+        min-width: 0;
+        max-width: none;
     }
 }
