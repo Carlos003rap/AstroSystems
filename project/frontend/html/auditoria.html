@@ -21,7 +21,7 @@
         <div class="admin-header">
             <div class="admin-header-left">
                 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
-                    <i class="ti ti-menu-2"></i>
+                    <i class="ti ti-menu-2" aria-hidden="true"></i>
                 </button>
                 <div>
                     <h1>Auditoría del Sistema</h1>
@@ -31,24 +31,29 @@
         </div>
 
         <!-- Tabs -->
-        <div class="aud-tabs">
-            <button class="aud-tab" id="tabLogin" onclick="setTab('login',this)">
-                <i class="ti ti-login"></i>Auditoría de Login
+        <div class="aud-tabs" role="tablist" aria-label="Tipo de auditoría">
+            <button class="aud-tab" id="tabLogin" role="tab" aria-selected="false" aria-controls="audTable" onclick="setTab('login',this)">
+                <i class="ti ti-login" aria-hidden="true"></i>Auditoría de Login
             </button>
-            <button class="aud-tab" id="tabCambios" onclick="setTab('cambios',this)">
-                <i class="ti ti-git-commit"></i>Auditoría de Cambios
+            <button class="aud-tab" id="tabCambios" role="tab" aria-selected="false" aria-controls="audTable" onclick="setTab('cambios',this)">
+                <i class="ti ti-git-commit" aria-hidden="true"></i>Auditoría de Cambios
             </button>
         </div>
 
         <!-- Stats -->
-        <div class="aud-stats" id="statsRow"></div>
+        <div class="aud-stats" id="statsRow" aria-live="polite">
+            <div class="aud-stat is-skeleton"></div>
+            <div class="aud-stat is-skeleton"></div>
+            <div class="aud-stat is-skeleton"></div>
+            <div class="aud-stat is-skeleton"></div>
+        </div>
 
         <!-- Filtros -->
         <div class="aud-filters">
             <div class="aud-ff grow">
-                <label>Buscar</label>
+                <label for="searchInput">Buscar</label>
                 <div class="search-wrap">
-                    <i class="ti ti-search"></i>
+                    <i class="ti ti-search" aria-hidden="true"></i>
                     <input type="text" id="searchInput"
                         placeholder="Buscar por administrador..."
                         oninput="filterTable()"
@@ -58,7 +63,7 @@
                 </div>
             </div>
             <div class="aud-ff" id="filterResWrap">
-                <label>Resultado</label>
+                <label for="filterRes">Resultado</label>
                 <select id="filterRes" onchange="filterTable()"
                     aria-label="Filtrar por resultado"
                     title="Filtrar por resultado">
@@ -68,8 +73,8 @@
                     <option value="Bloqueado">Bloqueado</option>
                 </select>
             </div>
-            <div class="aud-ff" id="filterTablaWrap">
-                <label>Tabla</label>
+            <div class="aud-ff" id="filterTablaWrap" style="display:none">
+                <label for="filterTabla">Tabla</label>
                 <select id="filterTabla" onchange="filterTable()"
                     aria-label="Filtrar por tabla"
                     title="Filtrar por tabla">
@@ -82,12 +87,12 @@
                 </select>
             </div>
             <div class="aud-ff">
-                <label>Fecha desde</label>
+                <label for="filterDesde">Fecha desde</label>
                 <input type="date" id="filterDesde" onchange="filterTable()"
                     title="Fecha desde" aria-label="Fecha desde">
             </div>
             <div class="aud-ff">
-                <label>Fecha hasta</label>
+                <label for="filterHasta">Fecha hasta</label>
                 <input type="date" id="filterHasta" onchange="filterTable()"
                     title="Fecha hasta" aria-label="Fecha hasta">
             </div>
@@ -102,10 +107,10 @@
                 </div>
                 <div class="export-btns">
                     <button class="btn-export" onclick="exportTable('audTable','csv')">
-                        <i class="ti ti-file-type-csv"></i>CSV
+                        <i class="ti ti-file-type-csv" aria-hidden="true"></i>CSV
                     </button>
                     <button class="btn-export" onclick="exportTable('audTable','xlsx')">
-                        <i class="ti ti-file-spreadsheet"></i>Excel
+                        <i class="ti ti-file-spreadsheet" aria-hidden="true"></i>Excel
                     </button>
                 </div>
             </div>
@@ -115,8 +120,16 @@
                     <tbody id="tBody"></tbody>
                 </table>
                 <div class="no-results" id="emptyState" style="display:none">
-                    <i class="ti ti-search-off"></i>
+                    <i class="ti ti-search-off" aria-hidden="true"></i>
                     Sin registros encontrados
+                </div>
+                <div class="table-state is-error" id="auditError" role="alert" hidden>
+                    <i class="ti ti-cloud-off" aria-hidden="true"></i>
+                    <span class="table-state-title">No se pudo cargar la auditoría</span>
+                    <span>Revisa tu conexión e inténtalo de nuevo.</span>
+                    <button type="button" class="btn-secondary" onclick="cargarDatos(currentTab)">
+                        <i class="ti ti-refresh" aria-hidden="true"></i> Reintentar
+                    </button>
                 </div>
             </div>
         </div>
@@ -131,6 +144,7 @@
 <script>
 var currentTab = 'login';
 var DATA = { login: [], cambios: [] };
+var AUD_ERROR = false; // la carga falló: se muestra el estado de error en lugar de "sin registros"
 
 var STATS = {
     login: function() {
@@ -152,7 +166,7 @@ var STATS = {
             {ico:'ti-history',   cls:'si-amber', label:'Total cambios',    val:DATA.cambios.length},
             {ico:'ti-table',     cls:'si-blue',  label:'Tablas afectadas', val:tablas},
             {ico:'ti-user-edit', cls:'si-green', label:'Administradores',  val:admins},
-            {ico:'ti-calendar',  cls:'si-red',   label:'Dias con cambios', val:dias}
+            {ico:'ti-calendar',  cls:'si-red',   label:'Días con cambios', val:dias}
         ];
     }
 };
@@ -161,6 +175,7 @@ function setTab(tab, btn) {
     currentTab = tab;
     document.querySelectorAll('.aud-tab').forEach(function(b){ b.classList.remove('active'); });
     if (btn) btn.classList.add('active');
+    document.querySelectorAll('.aud-tab').forEach(function(b){ b.setAttribute('aria-selected', b.classList.contains('active') ? 'true' : 'false'); });
     history.replaceState(null, '', window.location.pathname + '?tab=' + tab);
     document.getElementById('filterResWrap').style.display   = tab==='login'   ? '' : 'none';
     document.getElementById('filterTablaWrap').style.display = tab==='cambios' ? '' : 'none';
@@ -180,10 +195,14 @@ function renderStats() {
     var stats = STATS[currentTab]();
     document.getElementById('statsRow').innerHTML = stats.map(function(s) {
         return '<div class="aud-stat">' +
-            '<div class="aud-stat-ico ' + s.cls + '"><i class="ti ' + s.ico + '"></i></div>' +
-            '<div class="aud-stat-info"><span>' + s.label + '</span><strong>' + s.val + '</strong></div>' +
+            '<div class="aud-stat-ico ' + s.cls + '"><i class="ti ' + s.ico + '" aria-hidden="true"></i></div>' +
+            '<div class="aud-stat-info"><span>' + s.label + '</span><strong data-count="' + s.val + '">' + s.val + '</strong></div>' +
         '</div>';
     }).join('');
+    // Contador animado (respeta "reducir movimiento")
+    document.querySelectorAll('#statsRow [data-count]').forEach(function(el) {
+        UIService.countUp(el, Number(el.getAttribute('data-count')), 700);
+    });
 }
 
 function renderTable() {
@@ -205,20 +224,20 @@ function renderTable() {
     });
 
     document.getElementById('tableCount').textContent = filtered.length + ' registros encontrados';
-    document.getElementById('emptyState').style.display = filtered.length ? 'none' : 'block';
+    document.getElementById('emptyState').style.display = (filtered.length || AUD_ERROR) ? 'none' : 'block';
 
     if (currentTab === 'login') {
         document.getElementById('tHead').innerHTML =
             '<tr><th>ID</th><th>Administrador</th><th>Fecha</th><th>Hora</th><th>Resultado</th></tr>';
         document.getElementById('tBody').innerHTML = filtered.map(function(r) {
-            var cls = r.resultado==='Exitoso' ? 'aud-pill-ok'     : 'aud-pill-fail';
-            var ico = r.resultado==='Exitoso' ? 'ti-circle-check' : 'ti-circle-x';
+            var cls = r.resultado==='Exitoso' ? 'aud-pill-ok'     : (r.resultado==='Bloqueado' ? 'aud-pill-warn' : 'aud-pill-fail');
+            var ico = r.resultado==='Exitoso' ? 'ti-circle-check' : (r.resultado==='Bloqueado' ? 'ti-lock' : 'ti-circle-x');
             return '<tr>' +
                 '<td><span class="aud-id">#' + String(r.id).padStart(3,'0') + '</span></td>' +
                 '<td><span class="aud-admin-tag">' + (r.admin||'—') + '</span></td>' +
                 '<td>' + r.fecha + '</td>' +
                 '<td><span class="aud-time">' + r.hora + '</span></td>' +
-                '<td><span class="aud-pill ' + cls + '"><i class="ti ' + ico + '"></i>' + r.resultado + '</span></td>' +
+                '<td><span class="aud-pill ' + cls + '"><i class="ti ' + ico + '" aria-hidden="true"></i>' + r.resultado + '</span></td>' +
             '</tr>';
         }).join('');
     } else {
@@ -230,8 +249,8 @@ function renderTable() {
                 '<td><span class="aud-admin-tag">' + (r.admin||'—') + '</span></td>' +
                 '<td><span class="aud-tabla-tag">' + (r.tablaAfectada||'—') + '</span></td>' +
                 '<td><strong>' + (r.campoEditado||'—') + '</strong></td>' +
-                '<td><span class="aud-val-old">' + (r.valorAnterior||'—') + '</span></td>' +
-                '<td><span class="aud-val-new">' + (r.valorNuevo||'—') + '</span></td>' +
+                '<td><span class="aud-val-old" title="' + String(r.valorAnterior||'—').replace(/"/g,'&quot;') + '">' + (r.valorAnterior||'—') + '</span></td>' +
+                '<td><span class="aud-val-new" title="' + String(r.valorNuevo||'—').replace(/"/g,'&quot;') + '">' + (r.valorNuevo||'—') + '</span></td>' +
                 '<td>' + r.fecha + '</td>' +
                 '<td><span class="aud-time">' + r.hora + '</span></td>' +
             '</tr>';
@@ -243,6 +262,15 @@ function filterTable() { renderTable(); }
 
 // ── Cargar datos desde la API ──
 function cargarDatos(tab) {
+    // Esqueleto mientras llegan los datos
+    AUD_ERROR = false;
+    document.getElementById('auditError').hidden = true;
+    document.getElementById('emptyState').style.display = 'none';
+    if (!document.getElementById('tHead').children.length) {
+        document.getElementById('tHead').innerHTML = '<tr><th>ID</th><th>Administrador</th><th>Fecha</th><th>Hora</th><th>Resultado</th></tr>';
+    }
+    UIService.renderSkeletonRows(document.getElementById('tBody'), 5, 6);
+
     Promise.all([
         apiClient.getLoginLogs(0, 100),
         apiClient.getAuditLogs(0, 100)
@@ -283,8 +311,10 @@ function cargarDatos(tab) {
 
     }).catch(function(e) {
         console.error('Error cargando auditoria:', e);
-        UIService.showError('Error al cargar auditoria');
+        UIService.showError('Error al cargar auditoría');
+        AUD_ERROR = true;
         setTab(tab, document.getElementById(tab==='login' ? 'tabLogin' : 'tabCambios'));
+        document.getElementById('auditError').hidden = false;
     });
 }
 
