@@ -465,6 +465,14 @@
     border-color: var(--green-200);
 }
 
+/* En escritorio el menú se contrae con el botón junto al admin;
+   el botón de la cabecera solo hace falta en celular y tablet para abrir el menú */
+@media (min-width: 901px) {
+    .sidebar-toggle {
+        display: none;
+    }
+}
+
 /* ── Fondo oscuro detrás del menú deslizable ── */
 .sidebar-overlay {
     position: fixed;
