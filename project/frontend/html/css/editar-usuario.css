@@ -361,6 +361,8 @@
 .puerta-item input[type=checkbox] {
     width: 18px;
     height: 18px;
+    margin: 0;
+    flex-shrink: 0;
     accent-color: var(--green-600);
 }
 
@@ -443,5 +445,83 @@
     .eu-fg input,
     .eu-fg select {
         height: 46px;
+    }
+}
+
+/* ── Editar grupo: ayuda, puertas por área y tabla de usuarios ── */
+.eu-card-help {
+    margin: 0;
+    padding: 14px 22px 0;
+    font-size: 13.5px;
+    color: var(--color-text-light);
+}
+
+#puertasContainer {
+    padding: 16px 22px 22px;
+}
+
+.puerta-area-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.puerta-area-group:last-child {
+    margin-bottom: 0;
+}
+
+.puerta-area-title {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+}
+
+.puerta-area-group .puerta-item {
+    margin-bottom: 0;
+}
+
+.puerta-item i {
+    font-size: 18px;
+    color: var(--color-text-light);
+}
+
+.puerta-item.active i {
+    color: var(--green-700);
+}
+
+.puerta-item span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.puerta-item:has(input:focus-visible) {
+    outline: 2px solid var(--green-600);
+    outline-offset: 2px;
+}
+
+.eg-users table {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .eu-card-help {
+        padding: 12px 16px 0;
+    }
+
+    #puertasContainer {
+        padding: 14px 16px 16px;
+    }
+
+    .puerta-area-group {
+        grid-template-columns: 1fr;
+    }
+
+    /* Celda vacía de relleno del formulario */
+    .eu-fg:empty {
+        display: none;
+    }
+
+    .eg-users:has(tbody tr) {
+        background: var(--green-50);
     }
 }
