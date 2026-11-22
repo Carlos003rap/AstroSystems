@@ -226,6 +226,11 @@ public class UsuarioService {
             // No dejamos que un fallo de auditoria interrumpa el reseteo de contrasena
         }
 
-        emailService.enviarNotificacionCambioPassword(usuario.getEmail());
+        try {
+            emailService.enviarNotificacionCambioPassword(usuario.getEmail());
+        } catch (Exception e) {
+            // La contraseña ya cambio: si el aviso por correo falla no se debe responder error al usuario
+            System.out.println("Aviso: no se pudo enviar la notificacion de cambio de contrasena - " + e.getMessage());
+        }
     }
 }
